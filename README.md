@@ -11,7 +11,7 @@ Fase 1: fondasi API .NET (minimal API + PostgreSQL + pgvector).
 4. `dotnet run --project server/src/ZyrexMES.Api`  → http://localhost:8080/swagger
 5. Tes: `dotnet test server/tests/ZyrexMES.Api.Tests`
 
-Akun seed awal dibuat lewat endpoint register admin di Plan 2; untuk dev gunakan SQL insert manual sesuai docs/dev-seed.md.
+Akun awal dibuat via fixture seeding saat test run; instruksi seed manual menyusul di Plan 2.
 
 Dev DB via WSL: powershell -File .superpowers/sdd/wsl-db-restart.ps1
 
