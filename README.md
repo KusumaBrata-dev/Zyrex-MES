@@ -3,6 +3,24 @@
 Sistem Manufacturing Execution System (MES) untuk PT Zyrexindo Mandiri Buana Tbk.
 Fase 1: fondasi API .NET (minimal API + PostgreSQL + pgvector).
 
+## Quick Start
+
+1. Prasyarat: .NET SDK 10, Docker (dev: engine di WSL2), Git.
+2. `docker compose up -d db`  (PostgreSQL 16 + pgvector di localhost:5433)
+3. `dotnet ef database update --project server/src/ZyrexMES.Infrastructure --startup-project server/src/ZyrexMES.Api`
+4. `dotnet run --project server/src/ZyrexMES.Api`  → http://localhost:8080/swagger
+5. Tes: `dotnet test server/tests/ZyrexMES.Api.Tests`
+
+Akun seed awal dibuat lewat endpoint register admin di Plan 2; untuk dev gunakan SQL insert manual sesuai docs/dev-seed.md.
+
+Dev DB via WSL: powershell -File .superpowers/sdd/wsl-db-restart.ps1
+
+### Troubleshooting
+
+- **Port 8080 dipakai proses lain** → matikan proses pemilik port atau ubah `applicationUrl` di `server/src/ZyrexMES.Api/Properties/launchSettings.json`.
+- **DB tidak reachable (`connection refused` di 5433)** → pastikan kontainer `db` hidup (`docker compose ps`); pada mesin dev ini gunakan skrip WSL di atas untuk siklus DB.
+- **Migrasi gagal saat startup** → migrasi dijalankan otomatis oleh seeder/API; jalankan manual langkah 3 bila perlu memaksa.
+
 ## Prasyarat
 
 - [.NET SDK 10](https://dotnet.microsoft.com/download)
