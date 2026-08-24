@@ -21,8 +21,23 @@ public class TraceabilityPersistenceTests : IDisposable
         _db.Database.Migrate();
 
         // Clean up leftovers from previous runs so reruns stay idempotent.
-        foreach (var u in _db.Units.Where(x => x.SerialNumber == "SN-T4-0001").ToList())
+        // Deletion order respects FKs: transactional children first, then units,
+        // products (BomItems/Routings cascade), ng code, finally lines (stations cascade).
+        var unitIds = _db.Units.Where(u => u.SerialNumber.StartsWith("SN-T4-")).Select(u => u.Id).ToList();
+        foreach (var r in _db.Repairs.Where(r => unitIds.Contains(r.UnitId)).ToList())
+            _db.Repairs.Remove(r);
+        foreach (var q in _db.QcResults.Where(q => unitIds.Contains(q.UnitId)).ToList())
+            _db.QcResults.Remove(q);
+        foreach (var t in _db.UnitTransactions.Where(t => unitIds.Contains(t.UnitId)).ToList())
+            _db.UnitTransactions.Remove(t);
+        foreach (var u in _db.Units.Where(u => u.SerialNumber.StartsWith("SN-T4-")).ToList())
             _db.Units.Remove(u);
+        foreach (var p in _db.Products.Where(p => p.Sku == "ZX-T4-001" || p.Sku == "ZX-T4-002").ToList())
+            _db.Products.Remove(p);
+        foreach (var n in _db.NgCodes.Where(n => n.Code == "NG-LCD-CRK").ToList())
+            _db.NgCodes.Remove(n);
+        foreach (var l in _db.Lines.Where(l => l.Code == "L-T4A").ToList())
+            _db.Lines.Remove(l);
         _db.SaveChanges();
     }
 
