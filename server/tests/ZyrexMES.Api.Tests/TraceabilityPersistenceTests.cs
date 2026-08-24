@@ -106,8 +106,22 @@ public class TraceabilityPersistenceTests : IDisposable
 
     private int SeedUserId()
     {
-        // User entity arrives in Task 5; use id=1 without FK so the test focuses on the unit chain.
-        return 1;
+        // Resolve a real user so the FK to users holds regardless of test execution order.
+        var user = _db.Users.OrderBy(u => u.Id).FirstOrDefault();
+        if (user is null)
+        {
+            user = new AppUser
+            {
+                Username = "seed-op",
+                PasswordHash = ZyrexMES.Infrastructure.Security.PasswordHasher.Hash("Seed!pwd123"),
+                FullName = "Seed Operator",
+                Role = UserRole.Operator,
+                IsActive = true,
+            };
+            _db.Users.Add(user);
+            _db.SaveChanges();
+        }
+        return user.Id;
     }
 
     public void Dispose() => _conn.Dispose();
