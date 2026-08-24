@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ZyrexMES.Api.Common;
+using ZyrexMES.Api.Hubs;
 using ZyrexMES.Api.Modules.Auth;
 using ZyrexMES.Api.Modules.MasterData;
 using ZyrexMES.Infrastructure.Persistence;
@@ -31,6 +32,7 @@ builder.Services
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddSignalR();
 
 var app = builder.Build();
 app.UseSwagger();
@@ -47,6 +49,15 @@ app.MapStationsEndpoints();
 app.MapProductsEndpoints();
 app.MapNgCodesEndpoints();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapHub<ProductionHub>("/hubs/production");
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+    Seeder.SeedDefaults(db, app.Configuration);
+}
+
 app.Run();
 
 public partial class Program { }
