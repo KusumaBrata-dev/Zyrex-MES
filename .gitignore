@@ -1,0 +1,28 @@
+# Build artifacts
+bin/
+obj/
+out/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Local config overrides
+appsettings.*.local.json
+
+# Node / frontend
+node_modules/
+dist/
+.next/
+
+# Test results
+TestResults/
+*.trx
+
+# OS
+Thumbs.db
+.DS_Store
