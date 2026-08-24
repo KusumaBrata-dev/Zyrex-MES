@@ -33,7 +33,7 @@ Catatan: port host `5433` dipakai karena `5432` sudah digunakan stack lain di me
 dotnet run --project server/src/ZyrexMES.Api
 ```
 
-- Health check: `GET http://localhost:<port>/health` → `200 {"status":"ok"}`
+- Health check: `GET http://localhost:8080/health` → `200 {"status":"ok"}`
 - Swagger UI tersedia pada route default (`/swagger`) saat aplikasi berjalan.
 
 ## Menjalankan Tes

@@ -1,6 +1,6 @@
-@ZyrexMES.Api_HostAddress = http://localhost:5079
+@ZyrexMES.Api_HostAddress = http://localhost:8080
 
-GET {{ZyrexMES.Api_HostAddress}}/weatherforecast/
+GET {{ZyrexMES.Api_HostAddress}}/health
 Accept: application/json
 
 ###
