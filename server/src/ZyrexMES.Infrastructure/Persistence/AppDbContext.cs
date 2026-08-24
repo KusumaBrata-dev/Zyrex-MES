@@ -7,6 +7,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<Line> Lines => Set<Line>();
     public DbSet<Station> Stations => Set<Station>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<BomItem> BomItems => Set<BomItem>();
+    public DbSet<Routing> Routings => Set<Routing>();
+    public DbSet<RoutingStep> RoutingSteps => Set<RoutingStep>();
 
     protected override void OnModelCreating(ModelBuilder b) => b.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 }
