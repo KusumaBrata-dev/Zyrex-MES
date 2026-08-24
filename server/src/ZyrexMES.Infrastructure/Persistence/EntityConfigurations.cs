@@ -82,6 +82,7 @@ internal class UnitTransactionConfig : IEntityTypeConfiguration<UnitTransaction>
         b.Property(x => x.Result).HasConversion<string>().HasMaxLength(8);
         b.Property(x => x.ScannedAtUtc).HasColumnType("timestamptz");
         b.HasOne(x => x.Unit).WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -92,6 +93,7 @@ internal class QcResultConfig : IEntityTypeConfiguration<QcResult>
         b.Property(x => x.Verdict).HasConversion<string>().HasMaxLength(8);
         b.Property(x => x.CheckedAtUtc).HasColumnType("timestamptz");
         b.HasOne(x => x.NgCode).WithMany().HasForeignKey(x => x.NgCodeId).OnDelete(DeleteBehavior.SetNull);
+        b.HasOne<AppUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -114,5 +116,19 @@ internal class RepairConfig : IEntityTypeConfiguration<Repair>
         b.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
         b.Property(x => x.ReportedAtUtc).HasColumnType("timestamptz");
         b.Property(x => x.ResolvedAtUtc).HasColumnType("timestamptz");
+        b.HasOne<AppUser>().WithMany().HasForeignKey(x => x.ReportedByUserId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal class AppUserConfig : IEntityTypeConfiguration<AppUser>
+{
+    public void Configure(EntityTypeBuilder<AppUser> b)
+    {
+        b.ToTable("users");
+        b.Property(x => x.Username).HasMaxLength(64);
+        b.HasIndex(x => x.Username).IsUnique();
+        b.Property(x => x.PasswordHash).HasMaxLength(512);
+        b.Property(x => x.FullName).HasMaxLength(128);
+        b.Property(x => x.Role).HasConversion<string>().HasMaxLength(16);
     }
 }
