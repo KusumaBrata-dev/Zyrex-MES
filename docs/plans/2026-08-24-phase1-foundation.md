@@ -4,16 +4,16 @@
 
 **Goal:** Fondasi MES Zyrexindo yang jalan end-to-end: PostgreSQL+pgvector di Docker, skema domain lengkap, Auth JWT+Argon2id dengan RBAC 5 role, audit log append-only (ISO 9001), CRUD master data, dan SignalR hub siap pakai.
 
-**Architecture:** Modular monolith ASP.NET Core 8 (`Domain` pure entities → `Infrastructure` EF Core/Npgsql → `Api` hosts/controllers/hubs). Satu database PostgreSQL 16 dengan ekstensi `vector`. Semua transaksi lewat REST; event realtime via SignalR `/hubs/production`.
+**Architecture:** Modular monolith ASP.NET Core 10 / net10.0 (`Domain` pure entities → `Infrastructure` EF Core/Npgsql → `Api` hosts/controllers/hubs). Satu database PostgreSQL 16 dengan ekstensi `vector`. Semua transaksi lewat REST; event realtime via SignalR `/hubs/production`.
 
-**Tech Stack:** .NET 8 · EF Core 8 + Npgsql + pgvector · xUnit + `WebApplicationFactory` · Konscious.Argon2 · JWT Bearer · SignalR · Docker Compose.
+**Tech Stack:** .NET 10 (net10.0 — SDK 10 sudah terpasang) · EF Core latest stable + Npgsql + pgvector · xUnit + `WebApplicationFactory` · Konscious.Argon2 · JWT Bearer · SignalR · Docker Compose (dev: docker engine di WSL2).
 
 **Spec:** `docs/specs/2026-08-24-mes-production-system-design.md` (AC-14, AC-15, AC-17 dijawab oleh plan ini; AC lainnya ada di Plan 2–5.)
 
 ## Global Constraints
 
-- Prasyarat setiap sesi test/integration: `docker compose up -d db` harus sudah berjalan.
-- Connection string dev: `Host=localhost;Port=5432;Database=zyrex_mes;Username=postgres;Password=mes_dev_pwd`.
+- Prasyarat setiap sesi test/integration: kontainer `zyrex-pg` harus berjalan — `docker start zyrex-pg` (WSL2). Port dev **5433** untuk menghindari konflik dengan pgvector milik stack lain yang sudah memakai 5432.
+- Connection string dev: `Host=localhost;Port=5433;Database=zyrex_mes;Username=postgres;Password=mes_dev_pwd`.
 - Port API dev: `http://localhost:8080`. Port DB: `5432`. Jangan ubah tanpa update semua task.
 - Bahasa kode Inggris; komentar hanya bila trade-off non-obvious.
 - Semua timestamp disimpan UTC (`DateTime.UtcNow`), tipe `timestamptz`.
@@ -46,7 +46,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: mes_dev_pwd
     ports:
-      - "5432:5432"
+      - "5433:5432"   # host 5433: 5432 sudah dipakai stack lain di mesin dev ini
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -60,7 +60,7 @@ volumes:
 
 `.gitignore`: standar Visual Studio (bin/, obj/, .vs/, *.user, appsettings.*.local.json, node_modules/ dist/ .next/).
 
-`README.md`: cara run (`docker compose up -d db`, `dotnet run --project server/src/ZyrexMES.Api`) + prasyarat (.NET SDK 8, Docker).
+`README.md`: cara run (`docker compose up -d db` atau `docker run pgvector`, `dotnet run --project server/src/ZyrexMES.Api`) + prasyarat (.NET SDK 10, Docker engine — dev di WSL2).
 
 - [ ] **Step 2: Scaffold solusi**
 
@@ -119,7 +119,7 @@ public partial class Program { }
 `appsettings.json`:
 ```json
 {
-  "ConnectionStrings": { "Default": "Host=localhost;Port=5432;Database=zyrex_mes;Username=postgres;Password=mes_dev_pwd" },
+  "ConnectionStrings": { "Default": "Host=localhost;Port=5433;Database=zyrex_mes;Username=postgres;Password=mes_dev_pwd" },
   "Logging": { "LogLevel": { "Default": "Information", "Microsoft.AspNetCore": "Warning" } },
   "AllowedHosts": "*"
 }
@@ -212,7 +212,7 @@ public class MasterDataPersistenceTests : IDisposable
     public MasterDataPersistenceTests()
     {
         _conn = new NpgsqlConnection(
-            "Host=localhost;Port=5432;Database=zyrex_mes;Username=postgres;Password=mes_dev_pwd");
+            "Host=localhost;Port=5433;Database=zyrex_mes;Username=postgres;Password=mes_dev_pwd");
         _conn.Open();
         var options = new DbContextOptionsBuilder<AppDbContext>().UseNpgsql(_conn).Options;
         _db = new AppDbContext(options);
@@ -554,7 +554,7 @@ public class TraceabilityPersistenceTests : IDisposable
 
     public TraceabilityPersistenceTests()
     {
-        _conn = new NpgsqlConnection("Host=localhost;Port=5432;Database=zyrex_mes;Username=postgres;Password=mes_dev_pwd");
+        _conn = new NpgsqlConnection("Host=localhost;Port=5433;Database=zyrex_mes;Username=postgres;Password=mes_dev_pwd");
         _conn.Open();
         _db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>().UseNpgsql(_conn).Options);
         _db.Database.Migrate();
@@ -924,7 +924,7 @@ public class CustomWebAppFactory : WebApplicationFactory<Program>
             cfg.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:Default"] =
-                    "Host=localhost;Port=5432;Database=zyrex_mes;Username=postgres;Password=mes_dev_pwd",
+                    "Host=localhost;Port=5433;Database=zyrex_mes;Username=postgres;Password=mes_dev_pwd",
                 ["Jwt:Key"] = "unit-test-signing-key-0123456789abcdef-unit-test",
                 ["Jwt:Issuer"] = "zyrex-mes-test",
                 ["Jwt:Audience"] = "zyrex-mes-clients",
@@ -1838,7 +1838,7 @@ Expected: build 0 error, semua tes hijau, swagger hidup.
 Isi minimal (verbatim):
 ```markdown
 ## Quick Start
-1. Prasyarat: .NET SDK 8, Docker Desktop, Git.
+1. Prasyarat: .NET SDK 10, Docker (dev: engine di WSL2), Git.
 2. `docker compose up -d db`  (PostgreSQL 16 + pgvector di localhost:5432)
 3. `dotnet ef database update --project server/src/ZyrexMES.Infrastructure --startup-project server/src/ZyrexMES.Api`
 4. `dotnet run --project server/src/ZyrexMES.Api`  → http://localhost:8080/swagger
@@ -1859,6 +1859,6 @@ git tag phase1-foundation-complete
 ## Peta Lanjutan (plan berikutnya — jangan dieksekusi dari plan ini)
 
 - **Plan 2 — Legacy Migration & Station Transactions**: ETL baca DB MES lama (line/station/product/routing/unit historis) → rekonsiliasi row-count + sampling 100 SN (AC-07, AC-08); endpoint scan `/api/production/scan` dengan validasi routing & duplikat (AC-01..AC-03); QC submit dengan ng_code wajib (AC-04); broadcast SignalR ScanAccepted/Rejected ≤2 detik (AC-06); overlay offline di sisi kiosk menyusul Plan 3.
-- **Plan 3 — Print Agent & Station Kiosk**: Windows service .NET 8 polling/WSS job cetak → BarTender CLI/SDK (Honeywell/Panda/Zebra) retry 3× + alert (AC-05); Next.js kiosk PWA + overlay SERVER OFFLINE blocking (AC-13).
+- **Plan 3 — Print Agent & Station Kiosk**: Windows service .NET (net10.0) polling/WSS job cetak → BarTender CLI/SDK (Honeywell/Panda/Zebra) retry 3× + alert (AC-05); Next.js kiosk PWA + overlay SERVER OFFLINE blocking (AC-13).
 - **Plan 4 — Dashboard Realtime & Reports**: monitoring 9 line, yield/throughput/WIP/NG Pareto, Andon TV, export Excel/PDF, alert anomali threshold (AC-12).
 - **Plan 5 — Local AI Assistant**: Ollama + Qwen2.5-14B Q4 di server; RAG SOP pgvector dengan sitasi versi (AC-10); NL→SQL guarded read-only whitelist (AC-11); isolasi outbound nol (AC-09); analisa akar masalah repair.
