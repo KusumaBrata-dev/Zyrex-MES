@@ -17,6 +17,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<NgCode> NgCodes => Set<NgCode>();
     public DbSet<Repair> Repairs => Set<Repair>();
     public DbSet<AppUser> Users => Set<AppUser>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder b) => b.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 }

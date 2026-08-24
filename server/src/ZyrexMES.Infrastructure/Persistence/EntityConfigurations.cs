@@ -132,3 +132,16 @@ internal class AppUserConfig : IEntityTypeConfiguration<AppUser>
         b.Property(x => x.Role).HasConversion<string>().HasMaxLength(16);
     }
 }
+
+internal class AuditLogConfig : IEntityTypeConfiguration<AuditLog>
+{
+    public void Configure(EntityTypeBuilder<AuditLog> b)
+    {
+        b.ToTable("audit_logs");
+        b.Property(x => x.Action).HasMaxLength(16);
+        b.Property(x => x.Method).HasMaxLength(8);
+        b.Property(x => x.Path).HasMaxLength(256);
+        b.Property(x => x.UserName).HasMaxLength(128);
+        b.Property(x => x.AtUtc).HasColumnType("timestamptz");
+    }
+}
