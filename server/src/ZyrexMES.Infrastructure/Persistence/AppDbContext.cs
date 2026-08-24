@@ -11,6 +11,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<BomItem> BomItems => Set<BomItem>();
     public DbSet<Routing> Routings => Set<Routing>();
     public DbSet<RoutingStep> RoutingSteps => Set<RoutingStep>();
+    public DbSet<Unit> Units => Set<Unit>();
+    public DbSet<UnitTransaction> UnitTransactions => Set<UnitTransaction>();
+    public DbSet<QcResult> QcResults => Set<QcResult>();
+    public DbSet<NgCode> NgCodes => Set<NgCode>();
+    public DbSet<Repair> Repairs => Set<Repair>();
 
     protected override void OnModelCreating(ModelBuilder b) => b.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 }

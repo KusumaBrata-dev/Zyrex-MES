@@ -61,3 +61,58 @@ internal class RoutingStepConfig : IEntityTypeConfiguration<RoutingStep>
         b.HasOne(x => x.Station).WithMany().OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+internal class UnitConfig : IEntityTypeConfiguration<Unit>
+{
+    public void Configure(EntityTypeBuilder<Unit> b)
+    {
+        b.Property(x => x.SerialNumber).HasMaxLength(64);
+        b.HasIndex(x => x.SerialNumber).IsUnique();
+        b.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+        b.Property(x => x.CreatedAtUtc).HasColumnType("timestamptz");
+        b.HasOne(x => x.Product).WithMany().HasForeignKey(x => x.ProductId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal class UnitTransactionConfig : IEntityTypeConfiguration<UnitTransaction>
+{
+    public void Configure(EntityTypeBuilder<UnitTransaction> b)
+    {
+        b.HasIndex(x => new { x.UnitId, x.ScannedAtUtc });
+        b.Property(x => x.Result).HasConversion<string>().HasMaxLength(8);
+        b.Property(x => x.ScannedAtUtc).HasColumnType("timestamptz");
+        b.HasOne(x => x.Unit).WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal class QcResultConfig : IEntityTypeConfiguration<QcResult>
+{
+    public void Configure(EntityTypeBuilder<QcResult> b)
+    {
+        b.Property(x => x.Verdict).HasConversion<string>().HasMaxLength(8);
+        b.Property(x => x.CheckedAtUtc).HasColumnType("timestamptz");
+        b.HasOne(x => x.NgCode).WithMany().HasForeignKey(x => x.NgCodeId).OnDelete(DeleteBehavior.SetNull);
+    }
+}
+
+internal class NgCodeConfig : IEntityTypeConfiguration<NgCode>
+{
+    public void Configure(EntityTypeBuilder<NgCode> b)
+    {
+        b.Property(x => x.Code).HasMaxLength(32);
+        b.HasIndex(x => x.Code).IsUnique();
+        b.Property(x => x.Description).HasMaxLength(256);
+    }
+}
+
+internal class RepairConfig : IEntityTypeConfiguration<Repair>
+{
+    public void Configure(EntityTypeBuilder<Repair> b)
+    {
+        b.Property(x => x.ProblemDescription).HasMaxLength(1024);
+        b.Property(x => x.RootCause).HasMaxLength(1024);
+        b.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+        b.Property(x => x.ReportedAtUtc).HasColumnType("timestamptz");
+        b.Property(x => x.ResolvedAtUtc).HasColumnType("timestamptz");
+    }
+}
