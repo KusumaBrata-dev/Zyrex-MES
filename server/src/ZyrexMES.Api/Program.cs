@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ZyrexMES.Api.Common;
 using ZyrexMES.Api.Modules.Auth;
+using ZyrexMES.Api.Modules.MasterData;
 using ZyrexMES.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +42,10 @@ app.MapControllers();
 app.MapAuthEndpoints();
 app.MapPost("/api/admin/ping", () => Results.Ok(new { pong = true }))
    .RequireRoles(Roles.Admin);
+app.MapLinesEndpoints();
+app.MapStationsEndpoints();
+app.MapProductsEndpoints();
+app.MapNgCodesEndpoints();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.Run();
 
