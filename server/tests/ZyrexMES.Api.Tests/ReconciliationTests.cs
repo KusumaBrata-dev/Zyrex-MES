@@ -26,12 +26,16 @@ public class ReconciliationTests(CustomWebAppFactory factory) : IClassFixture<Cu
         using var db = factory.CreateDb();
         db.Database.Migrate();
 
-        var legacyTxIds = db.UnitTransactions.Where(t => t.Notes != null && t.Notes.StartsWith("LEGACY:")).Select(t => t.Id).ToList();
-        foreach (var t in db.UnitTransactions.Where(t => legacyTxIds.Contains(t.Id)).ToList())
-            db.UnitTransactions.Remove(t);
-        foreach (var u in db.Units.Where(u => u.SerialNumber.StartsWith("LGCY-")).ToList())
-            db.Units.Remove(u);
-        db.SaveChanges();
+        // Units created by the transaction importer carry arbitrary serials —
+        // select by legacy ProductId as well, then clear txs before units.
+        var legacyProductIds = db.Products.Where(x => x.Source == "Legacy").Select(x => x.Id).ToList();
+        var affectedUnitIds = db.Units
+            .Where(u => u.SerialNumber.StartsWith("LGCY-") || legacyProductIds.Contains(u.ProductId))
+            .Select(u => u.Id).ToList();
+        db.UnitTransactions
+            .Where(t => affectedUnitIds.Contains(t.UnitId) || (t.Notes != null && t.Notes.StartsWith("LEGACY:")))
+            .ExecuteDelete();
+        db.Units.Where(u => affectedUnitIds.Contains(u.Id)).ExecuteDelete();
 
         foreach (var r in db.Routings.Where(r => r.Source == "Legacy").ToList())
             db.Routings.Remove(r);

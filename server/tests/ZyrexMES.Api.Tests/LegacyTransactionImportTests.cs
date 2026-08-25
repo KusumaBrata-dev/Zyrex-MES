@@ -22,10 +22,15 @@ public class LegacyTransactionImportTests(CustomWebAppFactory factory) : IClassF
         using var db = factory.CreateDb();
         db.Database.Migrate();
 
+        // Transactions owned by the importer user or flagged LEGACY: may belong
+        // to units seeded by other classes — clear them before the user removal.
+        var importerUserIds = db.Users.Where(u => u.Username == "legacy-import").Select(u => u.Id).ToList();
+        db.UnitTransactions
+            .Where(t => importerUserIds.Contains(t.UserId) || (t.Notes != null && t.Notes.StartsWith("LEGACY:")))
+            .ExecuteDelete();
+
         var unitIds = db.Units.Where(u => u.SerialNumber.StartsWith(Prefix)).Select(u => u.Id).ToList();
-        foreach (var t in db.UnitTransactions.Where(t => unitIds.Contains(t.UnitId)).ToList())
-            db.UnitTransactions.Remove(t);
-        db.SaveChanges();
+        db.UnitTransactions.Where(t => unitIds.Contains(t.UnitId)).ExecuteDelete();
 
         foreach (var u in db.Units.Where(u => u.SerialNumber.StartsWith(Prefix)).ToList())
             db.Units.Remove(u);

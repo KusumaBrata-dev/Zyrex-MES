@@ -23,9 +23,17 @@ public class LegacyMasterImportTests(CustomWebAppFactory factory) : IClassFixtur
         using var db = factory.CreateDb();
         db.Database.Migrate();
         // Units (and their transactions) reference legacy products with Restrict
-        // FKs — clear them before master data.
-        db.UnitTransactions.Where(t => t.Unit.SerialNumber.StartsWith(Prefix) || (t.Notes != null && t.Notes.StartsWith("LEGACY:"))).ExecuteDelete();
-        db.Units.Where(u => u.SerialNumber.StartsWith(Prefix)).ExecuteDelete();
+        // FKs — clear them before master data. Units created by the transaction
+        // importer carry arbitrary serials, so select by legacy ProductId too.
+        var legacyProductIds = db.Products
+            .Where(x => x.Source == "Legacy" || x.Sku.StartsWith(Prefix))
+            .Select(x => x.Id).ToList();
+        var affectedUnitIds = db.Units
+            .Where(u => u.SerialNumber.StartsWith(Prefix) || legacyProductIds.Contains(u.ProductId))
+            .Select(u => u.Id).ToList();
+        db.UnitTransactions.Where(t => affectedUnitIds.Contains(t.UnitId)
+            || (t.Notes != null && t.Notes.StartsWith("LEGACY:"))).ExecuteDelete();
+        db.Units.Where(u => affectedUnitIds.Contains(u.Id)).ExecuteDelete();
         var legacyStationIds = db.Stations.Where(x => x.Source == "Legacy" || x.Code.StartsWith(Prefix)).Select(x => x.Id).ToList();
         db.RoutingSteps.Where(x => legacyStationIds.Contains(x.StationId)).ExecuteDelete();
         db.Routings.Where(x => x.Source == "Legacy").ExecuteDelete();
