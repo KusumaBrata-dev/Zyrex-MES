@@ -33,12 +33,20 @@ public sealed class LegacyException : Exception
     }
 }
 
+/// <summary>READ-ONLY legacy MES operations (abstraction for testing/consumers).</summary>
+public interface ILegacyMesClient
+{
+    Task<LegacyEnvelope> GetTokenAsync(CancellationToken ct = default);
+    Task<LegacyEnvelope> CheckFlowAsync(string sn, string station, CancellationToken ct = default);
+    Task<LegacyEnvelope> GetMesDataAsync(string sn, string station, CancellationToken ct = default);
+}
+
 /// <summary>
 /// READ-ONLY client for the legacy vendor MES (GetToken / CheckFlow /
 /// GetMesData only). UpdateInfo and any other write service are intentionally
 /// unreachable from this class — enforced by test.
 /// </summary>
-public sealed class LegacyMesClient(HttpClient http, IOptions<LegacyOptions> options, ILogger<LegacyMesClient>? logger = null)
+public sealed class LegacyMesClient(HttpClient http, IOptions<LegacyOptions> options, ILogger<LegacyMesClient>? logger = null) : ILegacyMesClient
 {
     private const string SuccessCode = "000000";
     private const string ClientData = "MESTools";

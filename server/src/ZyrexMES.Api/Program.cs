@@ -20,6 +20,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<LegacyImportService>();
+builder.Services.AddScoped<LegacyTransactionImporter>();
+// Interface consumers (e.g. importer) share the typed client instance.
+builder.Services.AddScoped<ILegacyMesClient>(sp => sp.GetRequiredService<LegacyMesClient>());
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
