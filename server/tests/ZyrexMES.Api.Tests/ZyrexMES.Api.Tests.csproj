@@ -25,6 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\ZyrexMES.Api\ZyrexMES.Api.csproj" />
   </ItemGroup>
 
