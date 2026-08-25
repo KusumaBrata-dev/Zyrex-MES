@@ -83,6 +83,10 @@ internal class UnitTransactionConfig : IEntityTypeConfiguration<UnitTransaction>
     public void Configure(EntityTypeBuilder<UnitTransaction> b)
     {
         b.HasIndex(x => new { x.UnitId, x.ScannedAtUtc });
+        // Duplicate-scan guard for concurrent scans (TOCTOU backstop for the
+        // app-level check). Deliberately NOT unique(UnitId, StationId): legacy
+        // data may hold several transactions per pair at different times.
+        b.HasIndex(x => new { x.UnitId, x.StationId, x.ScannedAtUtc }).IsUnique();
         b.Property(x => x.Result).HasConversion<string>().HasMaxLength(8);
         b.Property(x => x.ScannedAtUtc).HasColumnType("timestamptz");
         b.HasOne(x => x.Unit).WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);

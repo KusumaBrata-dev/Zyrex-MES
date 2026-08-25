@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using ZyrexMES.Api.Common;
 using ZyrexMES.Domain.Entities;
 using ZyrexMES.Infrastructure.Persistence;
@@ -9,6 +10,12 @@ namespace ZyrexMES.Api.Modules.Production;
 
 public static class ProductionEndpoints
 {
+    /// <summary>True when the update failed on a unique-constraint violation
+    /// (Postgres 23505) — i.e. a concurrent scan won the TOCTOU race against
+    /// the app-level duplicate check and the DB guard rejected the insert.</summary>
+    public static bool IsDuplicateConstraintViolation(DbUpdateException ex) =>
+        ex.InnerException is PostgresException { SqlState: "23505" };
+
     public static void MapProductionEndpoints(this WebApplication app)
     {
         var g = app.MapGroup("/api/production");
@@ -89,7 +96,18 @@ public static class ProductionEndpoints
             };
             db.UnitTransactions.Add(tx);
             unit.Status = index == steps!.Count - 1 ? UnitStatus.Completed : UnitStatus.InProgress;
-            await db.SaveChangesAsync(ct);
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (IsDuplicateConstraintViolation(ex))
+            {
+                // Concurrent scan won the TOCTOU race; the unique guard
+                // (unit, station, scanned_at_utc) rejected the insert.
+                await broadcaster.BroadcastRejectedAsync(req.SerialNumber, station.Code, lineCode,
+                    "duplicate transaction at this station", atUtc, ct);
+                return Results.UnprocessableEntity(new { result = "REJECTED", reason = "duplicate transaction at this station" });
+            }
 
             string? nextStationCode = null;
             if (index < steps.Count - 1)
