@@ -5,12 +5,13 @@
 $ErrorActionPreference = 'Continue'
 wsl --shutdown
 Start-Sleep -Seconds 12
-@'
+$cmds = @'
 systemctl start docker >/dev/null 2>&1
 docker start zyrex-pg >/dev/null 2>&1
 nohup sleep 3600 >/dev/null 2>&1 &
 sleep 5
-'@ | wsl -d Ubuntu -u root -- bash
+'@
+($cmds -replace "`r", "") | wsl -d Ubuntu -u root -- bash
 Start-Sleep -Seconds 4
 $l = netstat -ano | Select-String '127\.0\.0\.1:5433.*LISTENING'
 if ($l) { "DB_READY (relay bound): $l" } else { "DB_NOT_READY - ulangi sekali lagi" }
