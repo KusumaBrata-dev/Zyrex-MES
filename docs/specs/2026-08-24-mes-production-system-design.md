@@ -186,8 +186,8 @@ migrasi penuh data legacy.
 - [ ] AC-04: Submit hasil QC NG tanpa memilih ng_code DITOLAK oleh validasi
 - [ ] AC-05: Job cetak label memicu BarTender lokal mencetak di Honeywell/Panda/Zebra; gagal → retry 3× → muncul alert di dashboard
 - [ ] AC-06: Dashboard menampilkan event scan semua 9 line via WebSocket ≤ 2 detik setelah transaksi
-- [ ] AC-07: Query traceability SN mana pun mengembalikan rantai lengkap transaksi+QC+repair termasuk data migrasi
-- [ ] AC-08: Rekonsiliasi migrasi: jumlah baris identik per tabel antara extract DB lama vs DB baru; 100 SN sampel acak cocok field-by-field
+- [ ] AC-07: Query traceability SN mana pun mengembalikan rantai lengkap transaksi+QC+repair untuk SN dalam cakupan migrasi
+- [ ] AC-08: Rekonsiliasi migrasi HYBRID (keputusan 2026-08-24): master data (line/station/product/routing) + transaksi **12 bulan terakhir** dimigrasi via Legacy API read-only (`GetMesData`); histori lebih lama tetap arsip di legacy (konsultasi manual). Rekonsiliasi = jumlah baris identik per tabel antara extract vs DB baru untuk window tersebut + 100 SN sampel acak cocok field-by-field
 - [ ] AC-09: Seluruh endpoint AI merespons saat server diputus dari internet (uji isolasi jaringan) — nol outbound call
 - [ ] AC-10: Jawaban SOP Q&A selalu menyertakan kutipan dokumen sumber + nomor versi SOP
 - [ ] AC-11: NL→SQL menolak INSERT/UPDATE/DELETE/DROP dan hanya membaca tabel whitelist
