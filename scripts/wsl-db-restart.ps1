@@ -11,7 +11,9 @@ docker start zyrex-pg >/dev/null 2>&1
 nohup sleep 3600 >/dev/null 2>&1 &
 sleep 5
 '@
-($cmds -replace "`r", "") | wsl -d Ubuntu -u root -- bash
+# PowerShell pipe ke native exe selalu menambah CRLF -> kirim via base64 agar bash menerima LF murni.
+$b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($cmds))
+wsl -d Ubuntu -u root -- bash -c "echo $b64 | base64 -d | bash"
 Start-Sleep -Seconds 4
 $l = netstat -ano | Select-String '127\.0\.0\.1:5433.*LISTENING'
 if ($l) { "DB_READY (relay bound): $l" } else { "DB_NOT_READY - ulangi sekali lagi" }
