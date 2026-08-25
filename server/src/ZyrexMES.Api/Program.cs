@@ -1,11 +1,13 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using ZyrexMES.Api.Common;
 using ZyrexMES.Api.Hubs;
 using ZyrexMES.Api.Modules.Auth;
 using ZyrexMES.Api.Modules.MasterData;
+using ZyrexMES.Infrastructure.Legacy;
 using ZyrexMES.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +35,27 @@ builder.Services
     });
 builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
+
+// Legacy MES (READ-ONLY): GetToken / CheckFlow / GetMesData only.
+builder.Services.Configure<LegacyOptions>(builder.Configuration.GetSection("Legacy"));
+// Runtime override: MES_LEGACY__URL / MES_LEGACY__USERID / MES_LEGACY__PASSWORD
+// (documented convention; standard env binding would map them to the wrong section).
+builder.Services.PostConfigure<LegacyOptions>(o =>
+{
+    o.Url = builder.Configuration["MES_LEGACY__URL"] ?? o.Url;
+    o.UserId = builder.Configuration["MES_LEGACY__USERID"] ?? o.UserId;
+    o.Password = builder.Configuration["MES_LEGACY__PASSWORD"] ?? o.Password;
+});
+builder.Services.AddHttpClient<LegacyMesClient>((sp, client) =>
+{
+    var opt = sp.GetRequiredService<IOptions<LegacyOptions>>().Value;
+    if (string.IsNullOrWhiteSpace(opt.Url))
+    {
+        throw new InvalidOperationException("Legacy:Url is not configured (set Legacy:Url or MES_LEGACY__URL).");
+    }
+    client.BaseAddress = new Uri(opt.Url);
+    client.Timeout = TimeSpan.FromSeconds(opt.TimeoutSeconds);
+});
 
 var app = builder.Build();
 app.UseSwagger();
