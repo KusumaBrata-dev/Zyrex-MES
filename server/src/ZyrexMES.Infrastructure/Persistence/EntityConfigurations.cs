@@ -145,3 +145,74 @@ internal class AuditLogConfig : IEntityTypeConfiguration<AuditLog>
         b.Property(x => x.AtUtc).HasColumnType("timestamptz");
     }
 }
+
+// Legacy MES staging snapshots (hybrid migration): flat FK-free copies of the
+// vendor system; RawJson keeps the original payload as jsonb.
+internal class LegacyLineSnapshotConfig : IEntityTypeConfiguration<LegacyLineSnapshot>
+{
+    public void Configure(EntityTypeBuilder<LegacyLineSnapshot> b)
+    {
+        b.ToTable("legacy_line_snapshots");
+        b.Property(x => x.LegacyCode).HasMaxLength(64);
+        b.Property(x => x.LegacyName).HasMaxLength(128);
+        b.HasIndex(x => x.LegacyCode).IsUnique();
+        b.Property(x => x.RawJson).HasColumnType("jsonb");
+        b.Property(x => x.ImportedAtUtc).HasColumnType("timestamptz");
+    }
+}
+
+internal class LegacyStationSnapshotConfig : IEntityTypeConfiguration<LegacyStationSnapshot>
+{
+    public void Configure(EntityTypeBuilder<LegacyStationSnapshot> b)
+    {
+        b.ToTable("legacy_station_snapshots");
+        b.Property(x => x.LegacyLineCode).HasMaxLength(64);
+        b.Property(x => x.LegacyCode).HasMaxLength(64);
+        b.Property(x => x.LegacyName).HasMaxLength(128);
+        b.Property(x => x.ProcessType).HasMaxLength(64);
+        b.HasIndex(x => x.LegacyCode).IsUnique();
+        b.Property(x => x.RawJson).HasColumnType("jsonb");
+        b.Property(x => x.ImportedAtUtc).HasColumnType("timestamptz");
+    }
+}
+
+internal class LegacyProductSnapshotConfig : IEntityTypeConfiguration<LegacyProductSnapshot>
+{
+    public void Configure(EntityTypeBuilder<LegacyProductSnapshot> b)
+    {
+        b.ToTable("legacy_product_snapshots");
+        b.Property(x => x.LegacySku).HasMaxLength(64);
+        b.Property(x => x.LegacyName).HasMaxLength(128);
+        b.HasIndex(x => x.LegacySku).IsUnique();
+        b.Property(x => x.RawJson).HasColumnType("jsonb");
+        b.Property(x => x.ImportedAtUtc).HasColumnType("timestamptz");
+    }
+}
+
+internal class LegacyRoutingSnapshotConfig : IEntityTypeConfiguration<LegacyRoutingSnapshot>
+{
+    public void Configure(EntityTypeBuilder<LegacyRoutingSnapshot> b)
+    {
+        b.ToTable("legacy_routing_snapshots");
+        b.Property(x => x.LegacySku).HasMaxLength(64);
+        b.Property(x => x.LegacyStationCode).HasMaxLength(64);
+        b.Property(x => x.RawJson).HasColumnType("jsonb");
+        b.Property(x => x.ImportedAtUtc).HasColumnType("timestamptz");
+    }
+}
+
+internal class LegacyTransactionSnapshotConfig : IEntityTypeConfiguration<LegacyTransactionSnapshot>
+{
+    public void Configure(EntityTypeBuilder<LegacyTransactionSnapshot> b)
+    {
+        b.ToTable("legacy_transaction_snapshots");
+        b.Property(x => x.SN).HasMaxLength(64);
+        b.Property(x => x.StationCode).HasMaxLength(64);
+        b.Property(x => x.ResultChar).HasMaxLength(1);
+        b.Property(x => x.OperatorCode).HasMaxLength(64);
+        b.HasIndex(x => new { x.SN, x.StationCode, x.ScannedAtUtc }).IsUnique();
+        b.Property(x => x.RawJson).HasColumnType("jsonb");
+        b.Property(x => x.ScannedAtUtc).HasColumnType("timestamptz");
+        b.Property(x => x.ImportedAtUtc).HasColumnType("timestamptz");
+    }
+}
