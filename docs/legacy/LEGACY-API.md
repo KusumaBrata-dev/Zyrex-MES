@@ -17,32 +17,37 @@
   (`MES_LEGACY__URL`, `MES_LEGACY__USERID`, `MES_LEGACY__PASSWORD`).
 - Password dikirim dalam bentuk sudah ter-hash (hex 32 char) oleh sumbernya.
 
-## Envelope
+## Envelope (TERKONFIRMASI via live probe 2026-08-24)
 
-Request JSON:
+Request JSON — **bersarang**, `ClientData` di header internal berisi identifier klien `"MESTools"`:
 ```json
 {
-  "RequestId": "<guid/urut>",
-  "ServiceName": "GetToken | CheckFlow | GetMesData | UpdateInfo",
-  "Language": "",
-  "ClientData": ""
+  "APIReqHeader": {
+    "RequestId": "<guid-nodash>",
+    "ServiceName": "GetToken | CheckFlow | GetMesData | UpdateInfo",
+    "Language": "",
+    "ClientData": "MESTools"
+  },
+  "APIReqData": { "...": "..." }
 }
 ```
 Response JSON:
 ```json
 {
-  "APIResHeader": { "Code": 0 },
+  "APIResHeader": { "RequestId": "<guid>", "ServiceName": "<echo>", "Code": "000000", "Desc": "OK" },
   "APIResData": { "...": "..." }
 }
 ```
-`Code != 0` = gagal.
+**PENTING**: `Code` adalah **STRING** 6 digit — `"000000"` = sukses; lainnya error
+(contoh terverifikasi: `"000500"` + `Desc` pesan CJK untuk SN tidak ditemukan).
+`APIResData` = `null` saat error. Jangan parse Code sebagai integer.
 
-## Alur Autentikasi
+## Alur Autentikasi (TERKONFIRMASI)
 
-1. POST dengan `ServiceName="GetToken"`; kredensial `UserID`/`Password`
-   dikirim pada bagian header-request internal tool.
-2. Ambil `APIResData.token`.
-3. Request berikutnya menyertakan header `Authorization` berisi token.
+1. POST `ServiceName="GetToken"`, `APIReqData = { "UserID": "<user>", "Password": "<hash-hex32>" }`
+   — kredensial di **body** (`APIReqData`), bukan HTTP header.
+2. Sukses → `APIResData.token` (string opaque ±88 char).
+3. Request berikutnya: HTTP header `Authorization: <token>`.
 
 ## Service Data (payload `APIReqData`)
 
