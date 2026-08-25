@@ -10,6 +10,7 @@ internal class LineConfig : IEntityTypeConfiguration<Line>
     {
         b.Property(x => x.Code).HasMaxLength(32);
         b.HasIndex(x => x.Code).IsUnique();
+        b.Property(x => x.Source).HasMaxLength(16).HasDefaultValue("Manual");
     }
 }
 
@@ -20,6 +21,7 @@ internal class StationConfig : IEntityTypeConfiguration<Station>
         b.Property(x => x.Code).HasMaxLength(64);
         b.Property(x => x.ProcessType).HasMaxLength(32);
         b.HasIndex(x => new { x.LineId, x.Code }).IsUnique();
+        b.Property(x => x.Source).HasMaxLength(16).HasDefaultValue("Manual");
         b.HasOne(x => x.Line).WithMany(l => l.Stations).OnDelete(DeleteBehavior.Cascade);
     }
 }
@@ -30,6 +32,7 @@ internal class ProductConfig : IEntityTypeConfiguration<Product>
     {
         b.Property(x => x.Sku).HasMaxLength(64);
         b.HasIndex(x => x.Sku).IsUnique();
+        b.Property(x => x.Source).HasMaxLength(16).HasDefaultValue("Manual");
     }
 }
 
@@ -48,6 +51,7 @@ internal class RoutingConfig : IEntityTypeConfiguration<Routing>
     {
         b.Property(x => x.Name).HasMaxLength(64);
         b.HasIndex(x => new { x.ProductId, x.Name }).IsUnique();
+        b.Property(x => x.Source).HasMaxLength(16).HasDefaultValue("Manual");
         b.HasOne(x => x.Product).WithMany(p => p.Routings).OnDelete(DeleteBehavior.Cascade);
     }
 }

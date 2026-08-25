@@ -8,5 +8,7 @@ public class Station
     public string Name { get; set; } = null!;
     public string? ProcessType { get; set; }
     public bool IsEnabled { get; set; } = true;
+    /// <summary>Origin of the row: "Manual" (default) or "Legacy" (migration import).</summary>
+    public string Source { get; set; } = "Manual";
     public Line Line { get; set; } = null!;
 }

@@ -7,6 +7,7 @@ using ZyrexMES.Api.Common;
 using ZyrexMES.Api.Hubs;
 using ZyrexMES.Api.Modules.Auth;
 using ZyrexMES.Api.Modules.MasterData;
+using ZyrexMES.Api.Modules.Migration;
 using ZyrexMES.Infrastructure.Legacy;
 using ZyrexMES.Infrastructure.Persistence;
 
@@ -18,6 +19,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<LegacyImportService>();
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
@@ -71,6 +73,7 @@ app.MapLinesEndpoints();
 app.MapStationsEndpoints();
 app.MapProductsEndpoints();
 app.MapNgCodesEndpoints();
+app.MapMigrationEndpoints();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapHub<ProductionHub>("/hubs/production");
 
