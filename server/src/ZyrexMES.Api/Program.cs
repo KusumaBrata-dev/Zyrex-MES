@@ -8,6 +8,7 @@ using ZyrexMES.Api.Hubs;
 using ZyrexMES.Api.Modules.Auth;
 using ZyrexMES.Api.Modules.MasterData;
 using ZyrexMES.Api.Modules.Migration;
+using ZyrexMES.Api.Modules.Production;
 using ZyrexMES.Infrastructure.Legacy;
 using ZyrexMES.Infrastructure.Persistence;
 
@@ -40,6 +41,7 @@ builder.Services
     });
 builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
+builder.Services.AddSingleton<IScanResultBroadcaster, SignalRScanResultBroadcaster>();
 
 // Legacy MES (READ-ONLY): GetToken / CheckFlow / GetMesData only.
 builder.Services.Configure<LegacyOptions>(builder.Configuration.GetSection("Legacy"));
@@ -78,6 +80,7 @@ app.MapProductsEndpoints();
 app.MapNgCodesEndpoints();
 app.MapMigrationEndpoints();
 app.MapReconciliationEndpoints();
+app.MapProductionEndpoints();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapHub<ProductionHub>("/hubs/production");
 
