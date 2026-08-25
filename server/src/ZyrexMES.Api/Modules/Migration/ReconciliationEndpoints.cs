@@ -101,26 +101,30 @@ public static class ReconciliationEndpoints
             .ToListAsync(ct);
 
         var mismatches = new List<ReconciliationMismatch>();
-        var mismatchedSnaps = 0;
+        var mismatchedTotal = 0;
         foreach (var s in samples)
         {
-            var before = mismatches.Count;
-            VerifySnapshot(db, s, units, stations, txs, mismatches);
-            if (mismatches.Count > before)
+            // Count independently of the capped example list: every sampled
+            // snapshot must be classified even once the list hits its cap.
+            if (VerifySnapshot(db, s, units, stations, txs, mismatches))
             {
-                mismatchedSnaps++;
+                mismatchedTotal++;
             }
         }
 
         return new
         {
             sampled = samples.Count,
-            matched = samples.Count - mismatchedSnaps,
+            matched = samples.Count - mismatchedTotal,
+            mismatchedTotal,
             mismatches,
         };
     }
 
-    private static void VerifySnapshot(
+    /// <summary>Verifies one sampled snapshot against core rows. Returns true
+    /// when the snapshot is a mismatch; appends an example to
+    /// <paramref name="mismatches"/> while that list is below its cap.</summary>
+    private static bool VerifySnapshot(
         AppDbContext db,
         LegacyTransactionSnapshot s,
         Dictionary<string, int> units,
@@ -131,12 +135,12 @@ public static class ReconciliationEndpoints
         if (!units.TryGetValue(s.SN, out var unitId))
         {
             Add(mismatches, s.SN, "unit", s.SN, "not found");
-            return;
+            return true;
         }
         if (!stations.TryGetValue(CodePrefix + s.StationCode, out var stationId))
         {
             Add(mismatches, s.SN, "station", CodePrefix + s.StationCode, "not found");
-            return;
+            return true;
         }
 
         var expectedResult = s.ResultChar == "P" ? QcVerdict.Pass : QcVerdict.Fail;
@@ -144,7 +148,7 @@ public static class ReconciliationEndpoints
         if (candidates.Count == 0)
         {
             Add(mismatches, s.SN, "transaction", $"{s.StationCode}@{s.ScannedAtUtc:O}", "not found");
-            return;
+            return true;
         }
 
         var match = candidates.Any(t => t.StationId == stationId && t.Result == expectedResult);
@@ -154,7 +158,10 @@ public static class ReconciliationEndpoints
             Add(mismatches, s.SN, "result/station",
                 $"{s.ResultChar}/{s.StationCode}",
                 $"{(actual.Result == QcVerdict.Pass ? "P" : "F")}/{db.Stations.Where(st => st.Id == actual.StationId).Select(st => st.Code).FirstOrDefault() ?? "?"}");
+            return true;
         }
+
+        return false;
     }
 
     private static void Add(List<ReconciliationMismatch> mismatches, string sn, string field, string expected, string actual)

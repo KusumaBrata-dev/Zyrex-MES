@@ -68,18 +68,35 @@ public sealed class LegacyMesClient(HttpClient http, IOptions<LegacyOptions> opt
     public async Task<LegacyEnvelope> CheckFlowAsync(string sn, string station, CancellationToken ct = default)
     {
         ValidateInput(sn, station);
-        _token ??= await FetchTokenAsync(ct);
-        return await SendAsync(ServiceCheckFlow, new { SN = sn, SNType = _options.SnType, Station = station }, ct);
+        return await SendDataAsync(ServiceCheckFlow, new { SN = sn, SNType = _options.SnType, Station = station }, ct);
     }
 
     public async Task<LegacyEnvelope> GetMesDataAsync(string sn, string station, CancellationToken ct = default)
     {
         ValidateInput(sn, station);
-        _token ??= await FetchTokenAsync(ct);
-        return await SendAsync(ServiceGetMesData, new { SN = sn, SNType = _options.SnType, Station = station }, ct);
+        return await SendDataAsync(ServiceGetMesData, new { SN = sn, SNType = _options.SnType, Station = station }, ct);
     }
 
     // --- internals -----------------------------------------------------------
+
+    /// <summary>Sends one data-service call with conservative auth-expired
+    /// recovery: when we already hold a token and the call fails with a business
+    /// code (Code != "000000"), the cached token may have expired server-side —
+    /// force one re-login and replay the original request exactly once. A second
+    /// failure propagates unchanged (no loops).</summary>
+    private async Task<LegacyEnvelope> SendDataAsync(string service, object reqData, CancellationToken ct)
+    {
+        _token ??= await FetchTokenAsync(ct);
+        try
+        {
+            return await SendAsync(service, reqData, ct);
+        }
+        catch (LegacyException ex) when (ex.LegacyCode != LegacyException.NetworkFailureCode)
+        {
+            await FetchTokenAsync(ct);
+            return await SendAsync(service, reqData, ct);
+        }
+    }
 
     private async Task<string> FetchTokenAsync(CancellationToken ct)
     {

@@ -10,9 +10,14 @@ namespace ZyrexMES.Api.Modules.Production;
 
 public static class ProductionEndpoints
 {
-    /// <summary>True when the update failed on a unique-constraint violation
-    /// (Postgres 23505) — i.e. a concurrent scan won the TOCTOU race against
-    /// the app-level duplicate check and the DB guard rejected the insert.</summary>
+    /// <summary>
+    /// True when the update failed on a unique-constraint violation (Postgres 23505).
+    /// Layering: the app-level duplicate check above is the PRIMARY defense (it
+    /// rejects any rescan of the same unit+station regardless of time). This DB
+    /// guard is only a backstop that catches concurrent scans producing the exact
+    /// same ScannedAtUtc; millisecond-level races can still slip through and are
+    /// an accepted trade-off (see docs/plans/2026-08-24-phase2-summary.md).
+    /// </summary>
     public static bool IsDuplicateConstraintViolation(DbUpdateException ex) =>
         ex.InnerException is PostgresException { SqlState: "23505" };
 
@@ -102,8 +107,10 @@ public static class ProductionEndpoints
             }
             catch (DbUpdateException ex) when (IsDuplicateConstraintViolation(ex))
             {
-                // Concurrent scan won the TOCTOU race; the unique guard
-                // (unit, station, scanned_at_utc) rejected the insert.
+                // Backstop only: catches concurrent scans that produced the exact
+                // same ScannedAtUtc. The app-level check above remains the primary
+                // defense; ms-level races are an accepted trade-off
+                // (docs/plans/2026-08-24-phase2-summary.md).
                 await broadcaster.BroadcastRejectedAsync(req.SerialNumber, station.Code, lineCode,
                     "duplicate transaction at this station", atUtc, ct);
                 return Results.UnprocessableEntity(new { result = "REJECTED", reason = "duplicate transaction at this station" });

@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Reflection;
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -89,7 +89,7 @@ public class LegacyMesClientTests
     public async Task GetTokenAsync_WhenCodeIsNotSuccess_ThrowsLegacyExceptionWithoutRetry()
     {
         var errorJson = """
-            { "APIResHeader": { "RequestId": "", "ServiceName": "GetToken", "Code": "000500", "Desc": "æŠ¥æ–‡APIReqDataå†…å®¹ä¸èƒ½ä¸ºç©º" }, "APIResData": null }
+            { "APIResHeader": { "RequestId": "", "ServiceName": "GetToken", "Code": "000500", "Desc": "报文APIReqData内容不能为空" }, "APIResData": null }
             """;
         var handler = JsonHandler(errorJson);
         var client = CreateClient(handler);
@@ -97,7 +97,7 @@ public class LegacyMesClientTests
         var ex = await Assert.ThrowsAsync<LegacyException>(() => client.GetTokenAsync());
 
         Assert.Equal(500, ex.LegacyCode);
-        Assert.Contains("æŠ¥æ–‡", ex.Desc);
+        Assert.Contains("报文", ex.Desc);
         Assert.Single(handler.Requests); // business errors are never retried
     }
 
@@ -106,13 +106,14 @@ public class LegacyMesClientTests
     [Fact]
     public async Task CheckFlowAsync_SendsServicePayloadAndRawAuthorizationToken()
     {
-        var handler = JsonHandler(await FixtureAsync("gettoken-success.json"), await FixtureAsync("checkflow-snnotfound.json"));
+        var handler = JsonHandler(await FixtureAsync("gettoken-success.json"), await FixtureAsync("checkflow-snnotfound.json"), await FixtureAsync("gettoken-success.json"), await FixtureAsync("checkflow-snnotfound.json"));
         var client = CreateClient(handler);
 
         var ex = await Assert.ThrowsAsync<LegacyException>(() => client.CheckFlowAsync("SN1234", "PT"));
 
         Assert.Equal(500, ex.LegacyCode);
-        Assert.Equal(2, handler.Requests.Count);
+        // login → failed call → forced re-login (auth-expired recovery) → replayed call.
+        Assert.Equal(4, handler.Requests.Count);
 
         var dataRequest = handler.Requests[1];
         Assert.Equal(TokenPlaceholder, dataRequest.Authorization); // raw token, no Bearer prefix
@@ -121,6 +122,46 @@ public class LegacyMesClientTests
         Assert.Equal("SN1234", json.GetProperty("APIReqData").GetProperty("SN").GetString());
         Assert.Equal("SN", json.GetProperty("APIReqData").GetProperty("SNType").GetString());
         Assert.Equal("PT", json.GetProperty("APIReqData").GetProperty("Station").GetString());
+
+        // The replayed request carries the refreshed token as well.
+        Assert.Equal(TokenPlaceholder, handler.Requests[3].Authorization);
+    }
+
+    [Fact]
+    public async Task Data_Call_Auth_Expired_Relogins_Once_Then_Succeeds()
+    {
+        var successData = """
+            { "APIResHeader": { "RequestId": "<guid>", "ServiceName": "CheckFlow", "Code": "000000", "Desc": "OK" }, "APIResData": {} }
+            """;
+        var authExpired = """
+            { "APIResHeader": { "RequestId": "", "ServiceName": "CheckFlow", "Code": "000401", "Desc": "token expired" }, "APIResData": null }
+            """;
+        var handler = JsonHandler(
+            await FixtureAsync("gettoken-success.json"), // initial login
+            authExpired,                                 // first CheckFlow: token expired
+            await FixtureAsync("gettoken-success.json"), // forced re-login
+            successData);                                // replay succeeds
+        var client = CreateClient(handler);
+
+        var envelope = await client.CheckFlowAsync("SN1234", "PT");
+
+        Assert.Equal(0, envelope.Code);
+        Assert.Equal(4, handler.Requests.Count); // no further retries after success
+    }
+
+    [Fact]
+    public async Task Data_Call_Failing_Twice_Does_Not_Loop_Refresh()
+    {
+        var handler = JsonHandler(
+            await FixtureAsync("gettoken-success.json"),
+            await FixtureAsync("checkflow-snnotfound.json"),
+            await FixtureAsync("gettoken-success.json"),
+            await FixtureAsync("checkflow-snnotfound.json"));
+        var client = CreateClient(handler);
+
+        await Assert.ThrowsAsync<LegacyException>(() => client.CheckFlowAsync("SN1234", "PT"));
+        // Refresh/replay happens once; the second business failure propagates.
+        Assert.Equal(4, handler.Requests.Count);
     }
 
     [Fact]

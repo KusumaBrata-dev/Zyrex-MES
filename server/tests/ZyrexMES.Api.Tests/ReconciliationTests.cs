@@ -219,6 +219,36 @@ public class ReconciliationTests(CustomWebAppFactory factory) : IClassFixture<Cu
     }
 
     [Fact]
+    public async Task Sample_Caps_Mismatch_List_At_20_But_Counts_Total()
+    {
+        SeedSynced();
+        // 25 snapshots whose units were never imported → 25 mismatches.
+        using (var db = factory.CreateDb())
+        {
+            for (var i = 1; i <= 25; i++)
+                db.LegacyTransactionSnapshots.Add(new LegacyTransactionSnapshot
+                {
+                    SN = $"LGCY-REC-M{i:D2}", StationCode = RawStation, ResultChar = "P",
+                    ScannedAtUtc = new DateTime(2026, 8, 22, 8, i % 60, 0, DateTimeKind.Utc),
+                    OperatorCode = "OP1", RawJson = "{}", ImportedAtUtc = DateTime.UtcNow,
+                });
+            db.SaveChanges();
+        }
+
+        var supervisor = await AsAsync("supervisor1", "Sup!pwd123", UserRole.Supervisor, "Supervisor Satu");
+        var res = await supervisor.PostAsJsonAsync("/api/migration/reconciliation/sample", new { count = 28 });
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var body = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+
+        // 28 sampled = 3 synced + 25 broken; matched must use the INDEPENDENT
+        // total counter, not the capped example list.
+        Assert.Equal(28, body.GetProperty("sampled").GetInt32());
+        Assert.Equal(3, body.GetProperty("matched").GetInt32());
+        Assert.Equal(25, body.GetProperty("mismatchedTotal").GetInt32());
+        Assert.Equal(20, body.GetProperty("mismatches").GetArrayLength());
+    }
+
+    [Fact]
     public async Task Sample_Rejects_Out_Of_Range_Count_400()
     {
         var supervisor = await AsAsync("supervisor1", "Sup!pwd123", UserRole.Supervisor, "Supervisor Satu");
