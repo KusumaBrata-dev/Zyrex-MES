@@ -13,6 +13,7 @@
 - Prasyarat sesi tes DB: `powershell -File scripts/wsl-db-restart.ps1` → harus `DB_READY`.
 - Connection string dev tetap: `Host=localhost;Port=5433;Database=zyrex_mes;Username=postgres;Password=mes_dev_pwd` (di appsettings.Development.json saja).
 - **LEGACY READ-ONLY**: kelas `LegacyMesClient` TIDAK BOLEH memiliki metode yang menghasilkan `UpdateInfo` atau payload tulis apa pun. Reviewer akan menolak bila ada.
+- **ZERO-DISTURBANCE (larangan keras pemilik)**: MES lama milik vendor; TIDAK BOLEH sampai error akibat aktivitas kita. Wajib: tanpa loop ke server produksi, tanpa load test ke legacy, panggilan nyata dibatasi probe tunggal ber-supervisi; import massal hanya terhadap fixture/staging sampai ada persetujuan eksplisit + jendela sepi.
 - Kredensial legacy via konfigurasi env: `MES_LEGACY__URL`, `MES_LEGACY__USERID`, `MES_LEGACY__PASSWORD`, `MES_LEGACY__SNTYPE`. Dilarang hardcode/log nilai password.
 - Port API dev 8080; semua timestamp UTC timestamptz; kode Inggris; commit conventional; coverage ≥80%.
 - Nama file/konsep dikunci: `LegacyMesClient.cs`, `LegacyOptions.cs`, entitas staging `Legacy*`, endpoint `/api/production/scan`, `/api/quality/results`, `/api/migration/*`.
