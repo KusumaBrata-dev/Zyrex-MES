@@ -77,6 +77,7 @@ app.MapStationsEndpoints();
 app.MapProductsEndpoints();
 app.MapNgCodesEndpoints();
 app.MapMigrationEndpoints();
+app.MapReconciliationEndpoints();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapHub<ProductionHub>("/hubs/production");
 

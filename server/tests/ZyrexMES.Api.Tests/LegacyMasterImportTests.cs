@@ -15,34 +15,28 @@ public class LegacyMasterImportTests(CustomWebAppFactory factory) : IClassFixtur
 
     private static HttpClient Prepare(CustomWebAppFactory factory)
     {
-        // Clean up leftovers from previous runs so reruns stay idempotent.
-        // Core: LGCY-* rows via ordered immediate bulk deletes. Tracked deletes
-        // race with DB cascades here (Product->Routing->Step cascade vs explicit
-        // step deletes share no direct FK for EF to sort), so each phase commits
-        // before the next: steps on LGCY stations, then products (routings/steps
-        // cascade), finally lines (stations cascade).
+        // Import counts are ABSOLUTE, so this class wipes ALL migration data for a
+        // known-clean baseline (ReconciliationTests does the same; other classes
+        // re-seed their own fixtures in their ctors). Ordered immediate bulk
+        // deletes: steps on legacy stations, then products (routings/steps
+        // cascade), then lines (stations cascade), then all staging fixtures.
         using var db = factory.CreateDb();
         db.Database.Migrate();
-        var legacyStationIds = db.Stations.Where(x => x.Code.StartsWith(Prefix)).Select(x => x.Id).ToList();
+        // Units (and their transactions) reference legacy products with Restrict
+        // FKs — clear them before master data.
+        db.UnitTransactions.Where(t => t.Unit.SerialNumber.StartsWith(Prefix) || (t.Notes != null && t.Notes.StartsWith("LEGACY:"))).ExecuteDelete();
+        db.Units.Where(u => u.SerialNumber.StartsWith(Prefix)).ExecuteDelete();
+        var legacyStationIds = db.Stations.Where(x => x.Source == "Legacy" || x.Code.StartsWith(Prefix)).Select(x => x.Id).ToList();
         db.RoutingSteps.Where(x => legacyStationIds.Contains(x.StationId)).ExecuteDelete();
-        db.Products.Where(x => x.Sku.StartsWith(Prefix)).ExecuteDelete();
-        db.Lines.Where(x => x.Code.StartsWith(Prefix)).ExecuteDelete();
-        // Staging snapshots owned by this class (staging stores RAW legacy codes,
-        // so cleanup targets the exact seeded keys, not the LGCY- core prefix).
-        // Also drop LGCY-* staging rows left behind by LegacyStagingPersistenceTests
-        // (that class re-seeds its own fixtures in its constructor).
-        string[] stagedLines = ["LINE-A"];
-        string[] stagedStations = ["ST-A"];
-        string[] stagedSkus = ["SKU-A", "SKU-B"];
-        foreach (var r in db.LegacyRoutingSnapshots.Where(x => stagedSkus.Contains(x.LegacySku) || x.LegacySku.StartsWith(Prefix)).ToList())
-            db.LegacyRoutingSnapshots.Remove(r);
-        foreach (var p in db.LegacyProductSnapshots.Where(x => stagedSkus.Contains(x.LegacySku) || x.LegacySku.StartsWith(Prefix)).ToList())
-            db.LegacyProductSnapshots.Remove(p);
-        foreach (var s in db.LegacyStationSnapshots.Where(x => stagedStations.Contains(x.LegacyCode) || x.LegacyCode.StartsWith(Prefix)).ToList())
-            db.LegacyStationSnapshots.Remove(s);
-        foreach (var l in db.LegacyLineSnapshots.Where(x => stagedLines.Contains(x.LegacyCode) || x.LegacyCode.StartsWith(Prefix)).ToList())
-            db.LegacyLineSnapshots.Remove(l);
-        db.SaveChanges();
+        db.Routings.Where(x => x.Source == "Legacy").ExecuteDelete();
+        db.Products.Where(x => x.Source == "Legacy" || x.Sku.StartsWith(Prefix)).ExecuteDelete();
+        db.Stations.Where(x => x.Source == "Legacy" || x.Code.StartsWith(Prefix)).ExecuteDelete();
+        db.Lines.Where(x => x.Source == "Legacy" || x.Code.StartsWith(Prefix)).ExecuteDelete();
+        db.LegacyRoutingSnapshots.ExecuteDelete();
+        db.LegacyProductSnapshots.ExecuteDelete();
+        db.LegacyStationSnapshots.ExecuteDelete();
+        db.LegacyLineSnapshots.ExecuteDelete();
+        db.LegacyTransactionSnapshots.ExecuteDelete();
         return factory.CreateClient();
     }
 
