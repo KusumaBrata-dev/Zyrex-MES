@@ -1,4 +1,4 @@
-# Zyrex MES Production System
+﻿# Zyrex MES Production System
 
 Sistem Manufacturing Execution System (MES) untuk PT Zyrexindo Mandiri Buana Tbk.
 Fase 1: fondasi API .NET (minimal API + PostgreSQL + pgvector).
@@ -13,7 +13,7 @@ Fase 1: fondasi API .NET (minimal API + PostgreSQL + pgvector).
 
 Akun awal dibuat via fixture seeding saat test run; instruksi seed manual menyusul di Plan 2.
 
-Dev DB via WSL: powershell -File .superpowers/sdd/wsl-db-restart.ps1
+Dev DB via WSL: powershell -File scripts/wsl-db-restart.ps1
 
 ### Troubleshooting
 
