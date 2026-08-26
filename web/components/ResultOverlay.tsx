@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type MouseEvent } from "react";
+import { useEffect, useRef, type MouseEvent } from "react";
 import { playNg, playOk } from "@/lib/sound";
 
 export interface ResultOverlayProps {
@@ -20,6 +20,13 @@ const PASS_AUTO_DISMISS_MS = 1500;
  * stays until the operator taps anywhere.
  */
 export default function ResultOverlay({ kind, sn, reason, nextStationCode, onDone }: ResultOverlayProps) {
+  // Keep the latest callback in a ref so parent re-renders (new inline arrow
+  // each time) never reset the auto-dismiss timer.
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  });
+
   useEffect(() => {
     if (kind === "PASS") playOk();
     else playNg();
@@ -27,13 +34,13 @@ export default function ResultOverlay({ kind, sn, reason, nextStationCode, onDon
 
   useEffect(() => {
     if (kind !== "PASS") return;
-    const timer = window.setTimeout(onDone, PASS_AUTO_DISMISS_MS);
+    const timer = window.setTimeout(() => onDoneRef.current(), PASS_AUTO_DISMISS_MS);
     return () => window.clearTimeout(timer);
-  }, [kind, onDone]);
+  }, [kind]);
 
   function handleTap(e: MouseEvent) {
     e.preventDefault();
-    if (kind === "REJECTED") onDone();
+    if (kind === "REJECTED") onDoneRef.current();
   }
 
   return (

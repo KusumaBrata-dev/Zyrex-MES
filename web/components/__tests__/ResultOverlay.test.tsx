@@ -22,10 +22,12 @@ describe("ResultOverlay", () => {
 
   it("PASS: renders giant serial + next station, plays ok sound, auto-dismisses after 1.5 s", () => {
     const onDone = vi.fn();
-    render(
+    const { container } = render(
       <ResultOverlay kind="PASS" sn="SN-777" nextStationCode="ST-20" onDone={onDone} />,
     );
 
+    const overlay = screen.getByTestId("result-overlay");
+    expect(overlay.className).toContain("bg-green-800"); // dark green backdrop
     expect(screen.getByText("PASS")).toBeInTheDocument();
     expect(screen.getByText("SN-777")).toBeInTheDocument();
     expect(screen.getByText(/Next station: ST-20/)).toBeInTheDocument();
@@ -34,6 +36,22 @@ describe("ResultOverlay", () => {
 
     act(() => vi.advanceTimersByTime(1500));
     expect(onDone).toHaveBeenCalledOnce();
+    void container;
+  });
+
+  it("PASS: parent re-renders with a new inline onDone do not reset the dismiss timer", () => {
+    // Simulates the real scan page: onDone is an inline arrow recreated per render.
+    const onDone = vi.fn();
+    function Parent(_: { tick: number }) {
+      return <ResultOverlay kind="PASS" sn="S" onDone={() => onDone()} />;
+    }
+    const { rerender } = render(<Parent tick={0} />);
+
+    act(() => vi.advanceTimersByTime(700));
+    rerender(<Parent tick={1} />); // new arrow identity mid-countdown
+    act(() => vi.advanceTimersByTime(800)); // 1500 ms total elapsed
+
+    expect(onDone).toHaveBeenCalledOnce(); // fired exactly once, on schedule
   });
 
   it("REJECTED: renders reason in red overlay, plays ng sound, dismisses only on tap", () => {

@@ -65,4 +65,14 @@ describe("ScanInput", () => {
 
     expect(document.activeElement).toBe(input);
   });
+
+  it("reclaims focus when re-enabled after a submit (disabled -> enabled)", () => {
+    const { rerender } = render(<ScanInput onSubmit={onSubmit} disabled />);
+    const input = screen.getByLabelText("Serial number") as HTMLInputElement;
+    expect(document.activeElement).not.toBe(input); // disabled inputs cannot hold focus
+
+    rerender(<ScanInput onSubmit={onSubmit} disabled={false} />);
+
+    expect(document.activeElement).toBe(input);
+  });
 });

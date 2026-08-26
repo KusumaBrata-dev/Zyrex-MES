@@ -45,10 +45,10 @@ function ScanScreen() {
       return;
     }
     // Kiosk URL pattern: /scan?stationId=5 (persisted to localStorage).
-    const fromUrl = searchParams.get("stationId");
-    if (fromUrl && /^\d+$/.test(fromUrl)) {
-      window.localStorage.setItem(STATION_KEY, fromUrl);
-      setStationId(Number.parseInt(fromUrl, 10));
+    const fromUrl = Number.parseInt(searchParams.get("stationId") ?? "", 10);
+    if (Number.isInteger(fromUrl) && fromUrl > 0) {
+      window.localStorage.setItem(STATION_KEY, String(fromUrl));
+      setStationId(fromUrl);
       return;
     }
     setStationId(readStationId());

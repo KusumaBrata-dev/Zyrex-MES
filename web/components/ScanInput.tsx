@@ -1,13 +1,14 @@
 "use client";
 
-import { useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 
 const DOUBLE_SUBMIT_GUARD_MS = 500;
 
 /**
  * Full-width barcode/serial input for the kiosk. Keeps focus persistently
- * (re-focuses on blur) and submits on Enter, guarded against double submits
- * within 500 ms (scanners often fire twice).
+ * (re-focuses on blur AND whenever it is re-enabled after a submit) and
+ * submits on Enter, guarded against double submits within 500 ms (scanners
+ * often fire twice).
  */
 export default function ScanInput({
   onSubmit,
@@ -20,6 +21,12 @@ export default function ScanInput({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const lastSubmitAtRef = useRef(0);
+
+  // Disabling the input during a submit blurs it; reclaim focus the moment
+  // the field is enabled again so the operator never touches the mouse.
+  useEffect(() => {
+    if (!disabled) inputRef.current?.focus();
+  }, [disabled]);
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key !== "Enter") return;
