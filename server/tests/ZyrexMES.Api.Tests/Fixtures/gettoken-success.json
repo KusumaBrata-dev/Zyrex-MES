@@ -1,0 +1,4 @@
+{
+  "APIResHeader": { "RequestId": "<guid>", "ServiceName": "GetToken", "Code": "000000", "Desc": "OK" },
+  "APIResData": { "token": "<88-char-opaque-token>" }
+}

@@ -1,0 +1,4 @@
+{
+  "APIResHeader": { "RequestId": "<guid>", "ServiceName": "GetMesData", "Code": "000000", "Desc": "OK" },
+  "APIResData": {}
+}

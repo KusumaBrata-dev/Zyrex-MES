@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ZyrexMES.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using ZyrexMES.Infrastructure.Persistence;
 namespace ZyrexMES.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260825091258_AddSourceColumns")]
+    partial class AddSourceColumns
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -673,9 +676,6 @@ namespace ZyrexMES.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.HasIndex("UnitId", "ScannedAtUtc");
-
-                    b.HasIndex("UnitId", "StationId", "ScannedAtUtc")
-                        .IsUnique();
 
                     b.ToTable("UnitTransactions");
                 });

@@ -20,6 +20,8 @@ public class CustomWebAppFactory : WebApplicationFactory<Program>
                 ["Jwt:Issuer"] = "zyrex-mes-test",
                 ["Jwt:Audience"] = "zyrex-mes-clients",
                 ["Jwt:ExpiryHours"] = "12",
+                // Resolvable typed client for ILegacyMesClient consumers; never called in tests.
+                ["Legacy:Url"] = "http://legacy.test/API/TE/PostData",
             }));
     }
 

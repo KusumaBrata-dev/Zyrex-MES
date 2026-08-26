@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ZyrexMES.Infrastructure.Persistence;
@@ -11,9 +12,11 @@ using ZyrexMES.Infrastructure.Persistence;
 namespace ZyrexMES.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260825084533_AddLegacyStaging")]
+    partial class AddLegacyStaging
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -337,13 +340,6 @@ namespace ZyrexMES.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasDefaultValue("Manual");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
@@ -403,13 +399,6 @@ namespace ZyrexMES.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(64)
                         .HasColumnType("character varying(64)");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasDefaultValue("Manual");
 
                     b.HasKey("Id");
 
@@ -519,13 +508,6 @@ namespace ZyrexMES.Infrastructure.Migrations
                     b.Property<int>("ProductId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasDefaultValue("Manual");
-
                     b.HasKey("Id");
 
                     b.HasIndex("ProductId", "Name")
@@ -590,13 +572,6 @@ namespace ZyrexMES.Infrastructure.Migrations
                     b.Property<string>("ProcessType")
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)")
-                        .HasDefaultValue("Manual");
 
                     b.HasKey("Id");
 
@@ -673,9 +648,6 @@ namespace ZyrexMES.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.HasIndex("UnitId", "ScannedAtUtc");
-
-                    b.HasIndex("UnitId", "StationId", "ScannedAtUtc")
-                        .IsUnique();
 
                     b.ToTable("UnitTransactions");
                 });
