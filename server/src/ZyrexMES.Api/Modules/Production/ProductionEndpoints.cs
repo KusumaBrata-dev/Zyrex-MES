@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Npgsql;
 using ZyrexMES.Api.Common;
 using ZyrexMES.Domain.Entities;
@@ -10,6 +12,8 @@ namespace ZyrexMES.Api.Modules.Production;
 
 public static class ProductionEndpoints
 {
+    /// <summary>Template used for label jobs when Printing:DefaultTemplate is not configured.</summary>
+    private const string DefaultTemplateCode = "SN_LABEL";
     /// <summary>
     /// True when the update failed on a unique-constraint violation (Postgres 23505).
     /// Layering: the app-level duplicate check above is the PRIMARY defense (it
@@ -26,7 +30,7 @@ public static class ProductionEndpoints
         var g = app.MapGroup("/api/production");
 
         // Operator and above (all authenticated roles).
-        g.MapPost("/scan", async (ScanRequest req, AppDbContext db, IScanResultBroadcaster broadcaster, ClaimsPrincipal user, CancellationToken ct) =>
+        g.MapPost("/scan", async (ScanRequest req, AppDbContext db, IScanResultBroadcaster broadcaster, IConfiguration cfg, ClaimsPrincipal user, CancellationToken ct) =>
         {
             var userIdValue = user.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(userIdValue, out var userId))
@@ -101,6 +105,32 @@ public static class ProductionEndpoints
             };
             db.UnitTransactions.Add(tx);
             unit.Status = index == steps!.Count - 1 ? UnitStatus.Completed : UnitStatus.InProgress;
+
+            // Labeled step: queue a label print job in the SAME commit as the
+            // transaction, so a committed scan always has its label queued.
+            if (steps[index].RequireLabel)
+            {
+                var productSku = await db.Products
+                    .Where(p => p.Id == unit.ProductId)
+                    .Select(p => p.Sku)
+                    .FirstAsync(ct);
+                db.PrintJobs.Add(new PrintJob
+                {
+                    UnitId = unit.Id,
+                    StationId = station.Id,
+                    TemplateCode = cfg["Printing:DefaultTemplate"] ?? DefaultTemplateCode,
+                    PayloadJson = JsonSerializer.Serialize(new
+                    {
+                        sn = req.SerialNumber,
+                        productSku,
+                        stationCode = station.Code,
+                        scannedAtUtc = atUtc,
+                    }),
+                    Status = "Pending",
+                    CreatedAtUtc = atUtc,
+                });
+            }
+
             try
             {
                 await db.SaveChangesAsync(ct);
