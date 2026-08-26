@@ -4,8 +4,10 @@ import { Suspense, useCallback, useEffect, useState, type FormEvent } from "reac
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import DailySummary from "@/components/DailySummary";
+import OfflineOverlay from "@/components/OfflineOverlay";
 import ResultOverlay from "@/components/ResultOverlay";
 import ScanInput from "@/components/ScanInput";
+import { useServerHeartbeat } from "@/hooks/useServerHeartbeat";
 import { isLoggedIn, scan } from "@/lib/api";
 
 const STATION_KEY = "kiosk_station_id";
@@ -34,6 +36,7 @@ export default function ScanPage() {
 function ScanScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { offline } = useServerHeartbeat();
   const [stationId, setStationId] = useState<number | null>(null);
   const [stationInput, setStationInput] = useState("");
   const [phase, setPhase] = useState<Phase>({ state: "idle" });
@@ -142,6 +145,8 @@ function ScanScreen() {
           onDone={() => setPhase({ state: "idle" })}
         />
       )}
+
+      {offline && <OfflineOverlay />}
     </div>
   );
 }
