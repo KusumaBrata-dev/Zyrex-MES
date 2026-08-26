@@ -2,7 +2,9 @@ namespace ZyrexMES.PrintAgent;
 
 /// <summary>
 /// Polls the MES API for pending print jobs at the configured interval and
-/// processes each: print -> ack(true), or ack(false, error) on any failure.
+/// processes each: up to 3 print attempts, then ack(true) on success or
+/// ack(false, error) after the final failed attempt. Alerts are raised by the
+/// SERVER when it receives the final ack(false) — the agent never sends alerts.
 /// </summary>
 public sealed class PollingService(
     IAgentApiClient api,
@@ -10,6 +12,8 @@ public sealed class PollingService(
     AgentOptions options,
     ILogger<PollingService> logger) : BackgroundService
 {
+    /// <summary>Print attempts per job before acking it as failed.</summary>
+    private const int MaxPrintAttempts = 3;
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var interval = TimeSpan.FromSeconds(Math.Max(1, options.PollIntervalSeconds));
@@ -47,19 +51,32 @@ public sealed class PollingService(
 
         foreach (var job in jobs)
         {
-            try
+            Exception? lastError = null;
+            for (var attempt = 1; attempt <= MaxPrintAttempts; attempt++)
             {
-                var templatePath = ResolveTemplatePath(job.TemplateCode);
-                printer.Print(job.PayloadJson, templatePath);
+                try
+                {
+                    printer.Print(job.PayloadJson, job.TemplateCode);
+                    lastError = null;
+                    break;
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex;
+                    logger.LogWarning(ex, "print attempt {Attempt}/{MaxAttempts} failed for job {JobId}",
+                        attempt, MaxPrintAttempts, job.Id);
+                }
             }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+
+            if (lastError is not null)
             {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "printing job {JobId} failed", job.Id);
-                await AckSafeAsync(job.Id, ok: false, error: ex.Message, ct);
+                logger.LogError(lastError, "printing job {JobId} failed after {MaxPrintAttempts} attempts",
+                    job.Id, MaxPrintAttempts);
+                await AckSafeAsync(job.Id, ok: false, error: lastError.Message, ct);
                 continue;
             }
 
@@ -101,13 +118,5 @@ public sealed class PollingService(
         {
             logger.LogWarning(ex, "ack(ok={Ok}) for job {JobId} failed; will not retry from here", ok, id);
         }
-    }
-
-    /// <exception cref="InvalidOperationException">Template not configured for this agent.</exception>
-    private string ResolveTemplatePath(string templateCode)
-    {
-        if (!options.Templates.TryGetValue(templateCode, out var path))
-            throw new InvalidOperationException($"template '{templateCode}' is not configured on this agent");
-        return path;
     }
 }

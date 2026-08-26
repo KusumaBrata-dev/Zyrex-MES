@@ -31,11 +31,19 @@ public sealed class FakeApi : IAgentApiClient
 public sealed class FakePrinter : ILabelPrinter
 {
     public Func<string, string, Exception?>? ThrowOn { get; set; }
+    /// <summary>Throws a PrintException for the first N print calls (retry simulation).</summary>
+    public int FailFirst { get; set; }
     public List<string> Printed { get; } = [];
 
-    public void Print(string payloadJson, string templatePath)
+    public void Print(string payloadJson, string templateCode)
     {
-        var failure = ThrowOn?.Invoke(payloadJson, templatePath);
+        Exception? failure = null;
+        if (FailFirst > 0)
+        {
+            FailFirst--;
+            failure = new PrintException("transient printer fault");
+        }
+        failure ??= ThrowOn?.Invoke(payloadJson, templateCode);
         if (failure is not null) throw failure;
         lock (Printed) Printed.Add(payloadJson);
     }
@@ -96,7 +104,9 @@ public class PollingServiceTests : IDisposable
     [Fact]
     public async Task Unknown_Template_Acks_False()
     {
+        // Template resolution now lives in the printer; the fake simulates its failure.
         _api.Pending = [new PrintJobDto(9, "MYSTERY", "{}", 0)];
+        _printer.ThrowOn = (_, templateCode) => new PrintException($"unknown template '{templateCode}'");
 
         await _service.ProcessPendingJobsAsync(CancellationToken.None);
 
@@ -118,6 +128,37 @@ public class PollingServiceTests : IDisposable
         _api.Pending = [new PrintJobDto(5, "SN_LABEL", "{}", 0)];
         await _service.ProcessPendingJobsAsync(CancellationToken.None);
         Assert.Single(_api.Acks, a => a.Id == 5 && a.Ok);
+    }
+
+    [Fact]
+    public async Task Two_Print_Failures_Then_Success_Acks_True_Once()
+    {
+        _api.Pending = [new PrintJobDto(6, "SN_LABEL", "{}", 0)];
+        _printer.FailFirst = 2;
+
+        await _service.ProcessPendingJobsAsync(CancellationToken.None);
+
+        var ack = Assert.Single(_api.Acks);
+        Assert.Equal(6, ack.Id);
+        Assert.True(ack.Ok);
+        Assert.Null(ack.Error);
+        Assert.Single(_printer.Printed); // third attempt succeeded
+    }
+
+    [Fact]
+    public async Task Three_Print_Failures_Ack_False_Once_Without_Agent_Alert()
+    {
+        _api.Pending = [new PrintJobDto(7, "SN_LABEL", "{}", 0)];
+        _printer.FailFirst = 99; // never succeeds
+
+        await _service.ProcessPendingJobsAsync(CancellationToken.None);
+
+        var ack = Assert.Single(_api.Acks);
+        Assert.False(ack.Ok);
+        Assert.Contains("transient printer fault", ack.Error);
+        // The agent has no alert channel at all: alerts are raised by the server
+        // on the final ack(false). Nothing beyond this single ack is emitted.
+        Assert.Empty(_printer.Printed);
     }
 
     [Fact]

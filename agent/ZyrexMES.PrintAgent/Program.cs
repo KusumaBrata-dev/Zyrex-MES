@@ -12,7 +12,8 @@ builder.Services
     .ValidateOnStart(); // fail fast on bad config instead of failing per request
 builder.Services.AddSingleton<AgentOptions>(sp => sp.GetRequiredService<IOptions<AgentOptions>>().Value);
 builder.Services.AddHttpClient<IAgentApiClient, ApiClient>();
-builder.Services.AddSingleton<ILabelPrinter, ProcessLabelPrinter>();
+builder.Services.AddSingleton<IProcessRunner, ProcessRunner>();
+builder.Services.AddSingleton<ILabelPrinter, BartenderCliPrinter>();
 builder.Services.AddHostedService<PollingService>();
 // Runs as a console app normally; install with `sc create` / New-Service and it
 // runs as a Windows Service (AddWindowsService wires the lifetime).

@@ -23,6 +23,9 @@ public sealed class AgentOptions
     /// <summary>Directory where label data files are written.</summary>
     public string DataDir { get; set; } = "data";
 
+    /// <summary>Hard limit for one printer run; on timeout the process tree is killed.</summary>
+    public int PrintTimeoutSeconds { get; set; } = 60;
+
     /// <summary>Agent account username (role Agent user created by an admin at deployment).</summary>
     public string Username { get; set; } = "print-agent";
 
