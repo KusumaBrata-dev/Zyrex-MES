@@ -270,6 +270,64 @@ public class PrintJobsTests : IClassFixture<PrintFactory>, IDisposable
             || await _factory.Broadcaster.WaitForCallAsync(TimeSpan.FromSeconds(2));
         Assert.True(arrived, "no print_failed alert within 2s");
         Assert.Single(_factory.Broadcaster.Calls, c => c.StartsWith($"AlertRaised|print_failed|{jobId}|"));
+
+        // Re-acking a terminal job is idempotent: same status, no extra alert,
+        // no mutation of Attempts/CompletedAtUtc.
+        using (var db = _factory.CreateDb())
+        {
+            var before = await db.PrintJobs.SingleAsync(j => j.Id == jobId);
+            var reAck = await agent.PostAsJsonAsync($"/api/print/jobs/{jobId}/ack", new { ok = false, error = "out of paper" });
+            Assert.Equal(HttpStatusCode.OK, reAck.StatusCode);
+            Assert.Equal("Failed", JsonDocument.Parse(await reAck.Content.ReadAsStringAsync()).RootElement.GetProperty("status").GetString());
+            await db.Entry(before).ReloadAsync();
+            Assert.Equal("Failed", before.Status);
+            Assert.Equal(3, before.Attempts);
+            Assert.NotNull(before.CompletedAtUtc);
+            Assert.Single(_factory.Broadcaster.Calls, c => c.StartsWith($"AlertRaised|print_failed|{jobId}|"));
+        }
+    }
+
+    [Fact]
+    public async Task Claim_Returns_At_Most_Ten_Jobs_Per_Call()
+    {
+        var stations = SeedRoutingFixture();
+        using (var db = _factory.CreateDb())
+        {
+            var productId = db.Products.Single(p => p.Sku == Sku).Id;
+            for (var i = 0; i < 12; i++)
+            {
+                var unit = new Unit
+                {
+                    SerialNumber = $"SN-PRT-B{i}",
+                    ProductId = productId,
+                    Status = UnitStatus.Created,
+                    CreatedAtUtc = DateTime.UtcNow,
+                };
+                db.Units.Add(unit);
+                await db.SaveChangesAsync(); // assign unit.Id first (no nav property)
+                db.PrintJobs.Add(new PrintJob
+                {
+                    UnitId = unit.Id,
+                    StationId = stations[Station10],
+                    TemplateCode = "SN_LABEL",
+                    PayloadJson = "{}",
+                    Status = "Pending",
+                    CreatedAtUtc = DateTime.UtcNow,
+                });
+            }
+            await db.SaveChangesAsync();
+        }
+
+        var agent = await AgentAsync();
+        var res = await agent.PostAsync($"/api/print/jobs/claim?stationId={stations[Station10]}", null);
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var items = JsonDocument.Parse(await res.Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal(10, items.GetArrayLength());
+
+        // Remaining 2 pending jobs are claimable on the next call.
+        var second = JsonDocument.Parse(await (await agent.PostAsync(
+            $"/api/print/jobs/claim?stationId={stations[Station10]}", null)).Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal(2, second.GetArrayLength());
     }
 
     [Fact]

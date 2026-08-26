@@ -57,6 +57,11 @@ public static class PrintingEndpoints
             if (job is null)
                 return Results.NotFound(new { error = "print job not found" });
 
+            // Terminal states are final: a repeated ack is answered idempotently
+            // without mutating the job or raising another alert.
+            if (job.Status is "Printed" or "Failed")
+                return Results.Ok(new { status = job.Status });
+
             if (req.Ok)
             {
                 job.Status = "Printed";
