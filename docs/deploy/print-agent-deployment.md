@@ -82,7 +82,7 @@ The claim/ack endpoints require role `Agent`. Create a dedicated account
         -d "{\"username\":\"print-agent-st10\",\"password\":\"<agent-password>\"}"
    ```
 
-   Expect `{"token":"...","expiresAt":"..."}`.
+   Expect `{"token":"...","user":{"username":"...","fullName":"...","role":"..."}}`.
 
 > Interim alternative (before the Agent role is provisioned in production):
 > use a dedicated Operator account. Claim/ack require the Agent role, so this
@@ -164,7 +164,8 @@ Rules:
 ## 5. Validasi BarTender Nyata (uji cetak 1 label)
 
 1. Pick a real pending job or create one by scanning a unit at a routing step
-   flagged *RequireLabel* (job appears in `print_jobs` with status `Pending`).
+   flagged *RequireLabel* (job appears in the `"PrintJobs"` table with status
+   `Pending`).
 2. Watch the queue while the agent claims it:
 
    ```sql
@@ -258,7 +259,7 @@ alert — the agent itself never sends alerts.
 
 7. **Duplicate labels** — should not happen (unique `(UnitId, TemplateCode)`
    index + duplicate-scan rejection). If observed, check for two agents with
-   the same `StationId` and audit `print_jobs.Attempts` history.
+   the same `StationId` and audit `"PrintJobs"."Attempts"` history.
 
 ---
 

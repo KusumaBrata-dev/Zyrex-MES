@@ -13,8 +13,9 @@ public sealed class ApiClient(HttpClient http, AgentOptions options) : IAgentApi
 
     public async Task<IReadOnlyList<PrintJobDto>> ClaimJobsAsync(int stationId, CancellationToken ct = default)
     {
+        // Server contract: POST /api/print/jobs/claim (PrintingEndpoints.MapPost).
         return await SendWithAuthAsync<List<PrintJobDto>>(
-            () => new HttpRequestMessage(HttpMethod.Get, $"/api/print/jobs/claim?stationId={stationId}"),
+            () => new HttpRequestMessage(HttpMethod.Post, $"/api/print/jobs/claim?stationId={stationId}"),
             ct) ?? [];
     }
 
