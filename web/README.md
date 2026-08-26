@@ -1,5 +1,21 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## E2E (Playwright)
+
+The suite boots its own stack: `global-setup` restarts the WSL Postgres relay,
+starts the MES API (`:8080`) and Next dev (`:3000`) if they are not already
+running, seeds the `E99`/`ST-E2E`/`E2E-SKU`/`E2E-SN-0001` dataset via
+`wsl docker exec … psql`, and warms the dev proxy. Teardown kills only what it
+started. Artifacts (screenshots, traces, service logs) land in `e2e/artifacts`
+and `e2e/.logs` — both gitignored.
+
+```bash
+npm i -D @playwright/test && npx playwright install chromium   # once
+npm run e2e                                                    # from web/
+```
+
+Requirements: WSL with the `zyrex-pg` container, .NET SDK, Node ≥ 20.
+
 ## Getting Started
 
 First, run the development server:

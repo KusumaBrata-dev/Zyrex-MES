@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: `${process.env.API_ORIGIN ?? "http://localhost:8080"}/api/:path*`,
       },
+      {
+        // Kiosk heartbeat (useServerHeartbeat) pings same-origin /health.
+        source: "/health",
+        destination: `${process.env.API_ORIGIN ?? "http://localhost:8080"}/health`,
+      },
     ];
   },
 };
