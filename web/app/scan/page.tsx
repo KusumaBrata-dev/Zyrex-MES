@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { Suspense, useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import DailySummary from "@/components/DailySummary";
 import ResultOverlay from "@/components/ResultOverlay";
 import ScanInput from "@/components/ScanInput";
@@ -112,7 +113,12 @@ function ScanScreen() {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
-      <DailySummary stationId={stationId} refreshKey={summaryRefreshKey} />
+      <div className="flex items-center justify-end">
+        <Link href="/ng-report" className="text-sm text-zbright underline">
+          NG Report
+        </Link>
+      </div>
+      <DailySummary stationId={stationId} refreshSignal={summaryRefreshKey} />
 
       <div className="flex flex-1 items-center">
         <ScanInput onSubmit={onScan} disabled={phase.state === "submitting"} />

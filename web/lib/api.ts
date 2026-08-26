@@ -88,12 +88,41 @@ export async function scan(serialNumber: string, stationId: number): Promise<Sca
   return (await res.json()) as ScanResponse;
 }
 
-export async function getStationSummary(stationId: number, date: string) {
-  return request<{
-    stationId: number;
-    stationCode: string;
-    output: number;
-    ng: number;
-    yieldPercent: number | null;
-  }>(`/api/reports/station-summary?stationId=${stationId}&date=${date}`);
+export interface StationSummary {
+  stationId: number;
+  stationCode: string;
+  output: number;
+  ng: number;
+  yieldPercent: number | null;
+}
+
+export async function getStationSummary(stationId: number, date: string): Promise<StationSummary> {
+  return request<StationSummary>(`/api/reports/station-summary?stationId=${stationId}&date=${date}`);
+}
+
+export interface NgListItem {
+  sn: string;
+  stationCode: string;
+  ngCode: string | null;
+  notes: string | null;
+  checkedAtUtc: string;
+}
+
+export interface NgListResponse {
+  total: number;
+  page: number;
+  items: NgListItem[];
+}
+
+export async function getNgList(params: {
+  date: string;
+  stationId?: number;
+  page?: number;
+  pageSize?: number;
+}): Promise<NgListResponse> {
+  const query = new URLSearchParams({ date: params.date });
+  if (params.stationId !== undefined) query.set("stationId", String(params.stationId));
+  if (params.page !== undefined) query.set("page", String(params.page));
+  if (params.pageSize !== undefined) query.set("pageSize", String(params.pageSize));
+  return request<NgListResponse>(`/api/reports/ng-list?${query.toString()}`);
 }
