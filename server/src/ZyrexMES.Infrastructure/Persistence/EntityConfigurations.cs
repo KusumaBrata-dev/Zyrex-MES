@@ -115,6 +115,23 @@ internal class NgCodeConfig : IEntityTypeConfiguration<NgCode>
     }
 }
 
+internal class PrintJobConfig : IEntityTypeConfiguration<PrintJob>
+{
+    public void Configure(EntityTypeBuilder<PrintJob> b)
+    {
+        b.Property(x => x.TemplateCode).HasMaxLength(64);
+        b.Property(x => x.PayloadJson).HasColumnType("jsonb");
+        b.Property(x => x.Status).HasMaxLength(16);
+        b.Property(x => x.CreatedAtUtc).HasColumnType("timestamptz");
+        b.Property(x => x.CompletedAtUtc).HasColumnType("timestamptz");
+        // One label per unit per template: rescans are rejected upstream, this
+        // index is the backstop against double label creation.
+        b.HasIndex(x => new { x.UnitId, x.TemplateCode }).IsUnique();
+        b.HasOne<Unit>().WithMany().HasForeignKey(x => x.UnitId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<Station>().WithMany().HasForeignKey(x => x.StationId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
 internal class RepairConfig : IEntityTypeConfiguration<Repair>
 {
     public void Configure(EntityTypeBuilder<Repair> b)

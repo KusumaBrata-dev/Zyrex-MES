@@ -51,6 +51,7 @@ public class CustomWebAppFactory : WebApplicationFactory<Program>
         Ensure("admin", "Adm1n!pwd", "Sys Admin", Domain.Entities.UserRole.Admin);
         Ensure("leader1", "Lead!pwd12", "Leader Satu", Domain.Entities.UserRole.Leader);
         Ensure("op1", "Op!pwd123", "Operator Satu", Domain.Entities.UserRole.Operator);
+        Ensure("agent1", "Agent!pwd123", "Print Agent Satu", Domain.Entities.UserRole.Agent);
         db.SaveChanges();
     }
 }

@@ -14,6 +14,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Unit> Units => Set<Unit>();
     public DbSet<UnitTransaction> UnitTransactions => Set<UnitTransaction>();
     public DbSet<QcResult> QcResults => Set<QcResult>();
+    public DbSet<PrintJob> PrintJobs => Set<PrintJob>();
     public DbSet<NgCode> NgCodes => Set<NgCode>();
     public DbSet<Repair> Repairs => Set<Repair>();
     public DbSet<AppUser> Users => Set<AppUser>();

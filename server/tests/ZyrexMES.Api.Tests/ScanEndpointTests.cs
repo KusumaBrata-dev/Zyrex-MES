@@ -49,6 +49,12 @@ public sealed class FakeScanBroadcaster : IScanResultBroadcaster
         Record($"ScanRejected|{serialNumber}|{stationCode}|{lineCode}|{reason}");
         return Task.CompletedTask;
     }
+
+    public Task BroadcastAlertAsync(string type, long jobId, string? error, CancellationToken ct = default)
+    {
+        Record($"AlertRaised|{type}|{jobId}|{error}");
+        return Task.CompletedTask;
+    }
 }
 
 /// <summary>Factory variant with the real SignalR broadcaster replaced by the fake.</summary>

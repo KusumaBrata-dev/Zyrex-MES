@@ -9,6 +9,10 @@ public static class Roles
     public const string Qa = "Qa";
     public const string Supervisor = "Supervisor";
     public const string Admin = "Admin";
+    /// <summary>Machine account role for station print agents (claim/ack print jobs).</summary>
+    public const string Agent = "Agent";
+    // Note: Agent is deliberately NOT in All — it is a machine role, not a human
+    // production role; only the printing endpoints accept it.
     public static readonly string[] All = [Operator, Leader, Qa, Supervisor, Admin];
 }
 

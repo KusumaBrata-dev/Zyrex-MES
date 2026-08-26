@@ -2,6 +2,15 @@
 
 Sistem Manufacturing Execution System (MES) untuk PT Zyrexindo Mandiri Buana Tbk.
 Fase 1: fondasi API .NET (minimal API + PostgreSQL + pgvector).
+Fase 3: kiosk produksi (web/) + print agent BarTender (agent/).
+
+## Kiosk & Print Agent
+
+1. Backend: `dotnet run --project server/src/ZyrexMES.Api` (:8080)
+2. Print Agent: `dotnet publish agent/ZyrexMES.PrintAgent -c Release -r win-x64 --self-contained false` → install sebagai Windows Service (runbook lengkap: [docs/deploy/print-agent-deployment.md](docs/deploy/print-agent-deployment.md))
+3. Kiosk: `cd web && npm install && npm run dev` (:3000) — unit test `npm test`, E2E `npm run e2e`
+
+Ringkasan fase & status AC: [docs/plans/2026-08-24-phase3-summary.md](docs/plans/2026-08-24-phase3-summary.md).
 
 ## Quick Start
 

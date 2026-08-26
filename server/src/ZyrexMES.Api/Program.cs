@@ -9,7 +9,9 @@ using ZyrexMES.Api.Modules.Auth;
 using ZyrexMES.Api.Modules.MasterData;
 using ZyrexMES.Api.Modules.Migration;
 using ZyrexMES.Api.Modules.Production;
+using ZyrexMES.Api.Modules.Printing;
 using ZyrexMES.Api.Modules.Quality;
+using ZyrexMES.Api.Modules.Reports;
 using ZyrexMES.Infrastructure.Legacy;
 using ZyrexMES.Infrastructure.Persistence;
 
@@ -83,6 +85,8 @@ app.MapMigrationEndpoints();
 app.MapReconciliationEndpoints();
 app.MapProductionEndpoints();
 app.MapQualityEndpoints();
+app.MapPrintingEndpoints();
+app.MapReportsEndpoints();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapHub<ProductionHub>("/hubs/production");
 

@@ -1,6 +1,6 @@
 namespace ZyrexMES.Domain.Entities;
 
-public enum UserRole { Operator, Leader, Qa, Supervisor, Admin }
+public enum UserRole { Operator, Leader, Qa, Supervisor, Admin, Agent }
 
 public class AppUser
 {
