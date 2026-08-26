@@ -2,13 +2,10 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import OfflineOverlay from "@/components/OfflineOverlay";
-import { useServerHeartbeat } from "@/hooks/useServerHeartbeat";
 import { login } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { offline } = useServerHeartbeat();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +73,6 @@ export default function LoginPage() {
           {busy ? "Signing in…" : "Sign in"}
         </button>
       </form>
-      {offline && <OfflineOverlay />}
     </div>
   );
 }

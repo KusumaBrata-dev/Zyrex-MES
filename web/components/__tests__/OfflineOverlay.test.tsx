@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import OfflineGate from "@/components/OfflineGate";
 import OfflineOverlay from "@/components/OfflineOverlay";
 
 vi.mock("@/hooks/useServerHeartbeat", () => ({
@@ -35,26 +36,19 @@ describe("OfflineOverlay integration (scan page)", () => {
     expect(screen.getByText("HUBUNGI LEADER")).toBeInTheDocument();
   });
 
-  it("does not render anything when online (page-level conditional)", async () => {
-    // Page-level check: ScanPage renders the overlay only when the hook says so.
+  it("OfflineGate renders the overlay only while offline (global gate)", () => {
     heartbeatMock.mockReturnValue({ offline: false });
-    render(<OfflineOverlay />);
-    // Direct render always shows; the conditional lives in the pages —
-    // verified through ScanPage below.
-  });
-
-  it("ScanPage shows the overlay only while offline", async () => {
-    const { default: ScanPage } = await import("@/app/scan/page");
+    const { queryByTestId, unmount: unmountOnline } = render(<OfflineGate />);
+    expect(queryByTestId("offline-overlay")).toBeNull();
+    unmountOnline();
 
     heartbeatMock.mockReturnValue({ offline: true });
-    const { queryByTestId, unmount } = render(<ScanPage />);
-    expect(queryByTestId("offline-overlay")).not.toBeNull();
-    unmount();
-
-    heartbeatMock.mockReturnValue({ offline: false });
-    render(<ScanPage />);
-    expect(screen.queryByTestId("offline-overlay")).toBeNull();
+    render(<OfflineGate />);
+    expect(screen.getByTestId("offline-overlay")).not.toBeNull();
   });
+
+  // Scan-page-specific overlay test removed: the gate moved to the root
+  // layout (OfflineGate above) so every route is protected globally.
 });
 
 // The AI placeholder tests live here too (small surface).
