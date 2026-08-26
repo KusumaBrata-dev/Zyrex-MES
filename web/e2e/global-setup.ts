@@ -1,5 +1,5 @@
 import { type ChildProcess, execSync, spawn } from "node:child_process";
-import { closeSync, mkdirSync, openSync } from "node:fs";
+import { closeSync, mkdirSync, openSync, readFileSync } from "node:fs";
 
 /**
  * Starts the E2E stack (Postgres relay, MES API on :8080, Next dev on :3000).
@@ -52,8 +52,12 @@ export default async function globalSetup(): Promise<void> {
     await waitFor("http://localhost:8080/health", 2_000);
     console.log("API already running on :8080 — reusing.");
   } catch {
-    g.__e2eApi = start("dotnet run --project ../server/src/ZyrexMES.Api", "..", "e2e/.logs/api.log");
+    // cwd is web/ → repo root is ".."; the project path must be root-relative.
+    g.__e2eApi = start("dotnet run --project server/src/ZyrexMES.Api", "..", "e2e/.logs/api.log");
     await waitFor("http://localhost:8080/health", 120_000);
+    if (readFileSync("e2e/.logs/api.log", "utf8").includes("does not exist")) {
+      throw new Error("API failed to start: project path not found (see e2e/.logs/api.log)");
+    }
     console.log("API started on :8080.");
   }
 
