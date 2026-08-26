@@ -1,0 +1,139 @@
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using ZyrexMES.PrintAgent;
+
+namespace ZyrexMES.PrintAgent.Tests;
+
+public sealed class FakeApi : IAgentApiClient
+{
+    public List<PrintJobDto> Pending { get; set; } = [];
+    public Exception? ClaimError { get; set; }
+    public int ClaimCalls;
+    public List<(long Id, bool Ok, string? Error)> Acks { get; } = [];
+
+    public Task<IReadOnlyList<PrintJobDto>> ClaimJobsAsync(int stationId, CancellationToken ct = default)
+    {
+        Interlocked.Increment(ref ClaimCalls);
+        if (ClaimError is not null) throw ClaimError;
+        return Task.FromResult<IReadOnlyList<PrintJobDto>>(Pending);
+    }
+
+    public Task AckJobAsync(long id, bool ok, string? error, CancellationToken ct = default)
+    {
+        lock (Acks) Acks.Add((id, ok, error));
+        return Task.CompletedTask;
+    }
+}
+
+public sealed class FakePrinter : ILabelPrinter
+{
+    public Func<string, string, Exception?>? ThrowOn { get; set; }
+    public List<string> Printed { get; } = [];
+
+    public void Print(string payloadJson, string templatePath)
+    {
+        var failure = ThrowOn?.Invoke(payloadJson, templatePath);
+        if (failure is not null) throw failure;
+        lock (Printed) Printed.Add(payloadJson);
+    }
+}
+
+public class PollingServiceTests : IDisposable
+{
+    private static AgentOptions Options() => new()
+    {
+        StationId = 7,
+        PollIntervalSeconds = 1,
+        Templates = { ["SN_LABEL"] = "templates/SN_LABEL.btw" },
+    };
+
+    private readonly FakeApi _api = new();
+    private readonly FakePrinter _printer = new();
+    private readonly PollingService _service;
+
+    public PollingServiceTests() => _service = new PollingService(_api, _printer, Options(), NullLogger<PollingService>.Instance);
+
+    [Fact]
+    public async Task ProcessPendingJobs_Acks_True_For_Each_Printed_Job()
+    {
+        _api.Pending =
+        [
+            new PrintJobDto(1, "SN_LABEL", "{\"sn\":\"SN-1\"}", 0),
+            new PrintJobDto(2, "SN_LABEL", "{\"sn\":\"SN-2\"}", 0),
+        ];
+
+        await _service.ProcessPendingJobsAsync(CancellationToken.None);
+
+        Assert.Equal(2, _printer.Printed.Count);
+        Assert.Equal(2, _api.Acks.Count);
+        Assert.All(_api.Acks, a => { Assert.True(a.Ok); Assert.Null(a.Error); });
+        Assert.Equal([1L, 2L], _api.Acks.Select(a => a.Id));
+    }
+
+    [Fact]
+    public async Task Printer_Failure_Acks_False_With_Message_And_Continues()
+    {
+        _api.Pending =
+        [
+            new PrintJobDto(1, "SN_LABEL", "{\"sn\":\"A\"}", 0),
+            new PrintJobDto(2, "SN_LABEL", "{\"sn\":\"B\"}", 0),
+        ];
+        _printer.ThrowOn = (payload, _) =>
+            payload.Contains('B') ? new InvalidOperationException("boom") : null;
+
+        await _service.ProcessPendingJobsAsync(CancellationToken.None);
+
+        var acks = _api.Acks;
+        Assert.Equal(2, acks.Count);
+        Assert.True(acks[0].Ok, $"acks=[{string.Join("; ", acks)}]");
+        Assert.False(acks[1].Ok);
+        Assert.Equal("boom", acks[1].Error);
+    }
+
+    [Fact]
+    public async Task Unknown_Template_Acks_False()
+    {
+        _api.Pending = [new PrintJobDto(9, "MYSTERY", "{}", 0)];
+
+        await _service.ProcessPendingJobsAsync(CancellationToken.None);
+
+        var ack = Assert.Single(_api.Acks);
+        Assert.False(ack.Ok);
+        Assert.Contains("template", ack.Error, StringComparison.OrdinalIgnoreCase);
+        Assert.Empty(_printer.Printed);
+    }
+
+    [Fact]
+    public async Task Claim_Failure_Is_Survived_On_Next_Ticks()
+    {
+        _api.ClaimError = new HttpRequestException("api down");
+
+        await _service.ProcessPendingJobsAsync(CancellationToken.None); // must not throw
+        Assert.Empty(_api.Acks);
+
+        _api.ClaimError = null;
+        _api.Pending = [new PrintJobDto(5, "SN_LABEL", "{}", 0)];
+        await _service.ProcessPendingJobsAsync(CancellationToken.None);
+        Assert.Single(_api.Acks, a => a.Id == 5 && a.Ok);
+    }
+
+    [Fact]
+    public async Task Cancellation_Stops_Loop_Cleanly()
+    {
+        using var cts = new CancellationTokenSource();
+        var runTask = _service.StartAsync(cts.Token);
+
+        // Wait until at least one claim happened, then stop.
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (_api.ClaimCalls == 0 && DateTime.UtcNow < deadline)
+            await Task.Delay(20);
+        Assert.True(_api.ClaimCalls > 0, "poll loop never claimed");
+
+        await _service.StopAsync(CancellationToken.None);
+        var completed = await Task.WhenAny(runTask, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.Same(runTask, completed); // ExecuteTask finished within timeout
+        Assert.False(runTask.IsFaulted, $"loop faulted: {runTask.Exception}");
+    }
+
+    public void Dispose() => _service.Dispose();
+}

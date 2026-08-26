@@ -15,6 +15,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZyrexMES.Api.Tests", "tests\ZyrexMES.Api.Tests\ZyrexMES.Api.Tests.csproj", "{F2A7FA71-C2FD-4946-ADEB-CBB4289A3B19}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZyrexMES.PrintAgent", "..\agent\ZyrexMES.PrintAgent\ZyrexMES.PrintAgent.csproj", "{AB1B942D-A382-4CFA-BD03-38470B07F3EF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZyrexMES.PrintAgent.Tests", "..\agent\ZyrexMES.PrintAgent.Tests\ZyrexMES.PrintAgent.Tests.csproj", "{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -73,6 +77,30 @@ Global
 		{F2A7FA71-C2FD-4946-ADEB-CBB4289A3B19}.Release|x64.Build.0 = Release|Any CPU
 		{F2A7FA71-C2FD-4946-ADEB-CBB4289A3B19}.Release|x86.ActiveCfg = Release|Any CPU
 		{F2A7FA71-C2FD-4946-ADEB-CBB4289A3B19}.Release|x86.Build.0 = Release|Any CPU
+		{AB1B942D-A382-4CFA-BD03-38470B07F3EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AB1B942D-A382-4CFA-BD03-38470B07F3EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AB1B942D-A382-4CFA-BD03-38470B07F3EF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{AB1B942D-A382-4CFA-BD03-38470B07F3EF}.Debug|x64.Build.0 = Debug|Any CPU
+		{AB1B942D-A382-4CFA-BD03-38470B07F3EF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{AB1B942D-A382-4CFA-BD03-38470B07F3EF}.Debug|x86.Build.0 = Debug|Any CPU
+		{AB1B942D-A382-4CFA-BD03-38470B07F3EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AB1B942D-A382-4CFA-BD03-38470B07F3EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AB1B942D-A382-4CFA-BD03-38470B07F3EF}.Release|x64.ActiveCfg = Release|Any CPU
+		{AB1B942D-A382-4CFA-BD03-38470B07F3EF}.Release|x64.Build.0 = Release|Any CPU
+		{AB1B942D-A382-4CFA-BD03-38470B07F3EF}.Release|x86.ActiveCfg = Release|Any CPU
+		{AB1B942D-A382-4CFA-BD03-38470B07F3EF}.Release|x86.Build.0 = Release|Any CPU
+		{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}.Debug|x64.Build.0 = Debug|Any CPU
+		{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}.Debug|x86.Build.0 = Debug|Any CPU
+		{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}.Release|x64.ActiveCfg = Release|Any CPU
+		{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}.Release|x64.Build.0 = Release|Any CPU
+		{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}.Release|x86.ActiveCfg = Release|Any CPU
+		{DF24EDBA-D7EB-4A36-A1B3-7BC130AB6318}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
