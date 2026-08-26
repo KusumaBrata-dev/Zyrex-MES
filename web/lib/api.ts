@@ -57,11 +57,35 @@ export function isLoggedIn(): boolean {
   return sessionStorage.getItem(TOKEN_KEY) !== null;
 }
 
-export async function scan(serialNumber: string, stationId: number) {
-  return request<{ result: string; reason?: string }>("/api/production/scan", {
+export type ScanResponse =
+  | { result: "PASS"; unitId: number; transactionId: number; nextStationCode?: string }
+  | { result: "REJECTED"; reason: string };
+
+/**
+ * POST /api/production/scan. The backend answers 200 PASS or 422 REJECTED
+ * (both are typed results); any other failure throws like the rest of the API.
+ */
+export async function scan(serialNumber: string, stationId: number): Promise<ScanResponse> {
+  const res = await fetch(`${API}/api/production/scan`, {
     method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ serialNumber, stationId }),
   });
+  if (res.status === 422) {
+    const body = (await res.json()) as { result: "REJECTED"; reason: string };
+    return { result: "REJECTED", reason: body.reason ?? "rejected" };
+  }
+  if (!res.ok) {
+    let message = `HTTP ${res.status}`;
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (body.error) message = body.error;
+    } catch {
+      // non-JSON error body — keep the HTTP status message
+    }
+    throw new Error(message);
+  }
+  return (await res.json()) as ScanResponse;
 }
 
 export async function getStationSummary(stationId: number, date: string) {
