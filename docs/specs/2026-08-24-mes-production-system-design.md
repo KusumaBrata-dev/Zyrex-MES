@@ -197,6 +197,8 @@ migrasi penuh data legacy.
 - [ ] AC-15: RBAC: token role Operator memanggil endpoint admin → HTTP 403
 - [ ] AC-16: Restore uji coba pg_dump pada instance bersih berhasil + lolos pengecekan jumlah baris
 - [ ] AC-17: Coverage unit+integration backend ≥ 80%
+- [ ] AC-18: App stasiun menampilkan ringkasan hari-berjalan untuk station-nya (output count, NG count, yield%) + report NG harian yang dapat difilter tanggal; disajikan via endpoint laporan (`/api/reports/*`) dengan RBAC
+- [ ] AC-19: Web monitoring menampilkan grid seluruh stasiun semua 9 line (±100 tile) berisi status & counter harian per stasiun, diperbarui ≤2 detik dari event scan/QC via SignalR
 
 ### Constraints
 - PC stasiun Win 11 Pro + Edge kiosk mode; scanner USB wedge (input keyboard)
