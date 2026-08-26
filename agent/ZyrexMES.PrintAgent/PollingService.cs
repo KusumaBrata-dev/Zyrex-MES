@@ -51,6 +51,24 @@ public sealed class PollingService(
             {
                 var templatePath = ResolveTemplatePath(job.TemplateCode);
                 printer.Print(job.PayloadJson, templatePath);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "printing job {JobId} failed", job.Id);
+                await AckSafeAsync(job.Id, ok: false, error: ex.Message, ct);
+                continue;
+            }
+
+            // Print succeeded: send ack(true) ONLY. If that ack itself fails we
+            // must NOT fall back to ack(false) — the label is already printed,
+            // and a false ack would invite re-dispatch/duplicate printing. The
+            // job stays Sent on the server for manual follow-up.
+            try
+            {
                 await api.AckJobAsync(job.Id, ok: true, error: null, ct);
                 logger.LogInformation("printed job {JobId} ({Template})", job.Id, job.TemplateCode);
             }
@@ -60,9 +78,28 @@ public sealed class PollingService(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "printing job {JobId} failed", job.Id);
-                await api.AckJobAsync(job.Id, ok: false, error: ex.Message, ct);
+                logger.LogError(ex,
+                    "ack(ok=true) for job {JobId} failed; job remains Sent on the server for manual follow-up",
+                    job.Id);
             }
+        }
+    }
+
+    /// <summary>Ack that swallows its own failures (except cancellation): a broken
+    /// ack channel must never take down the poll loop.</summary>
+    private async Task AckSafeAsync(long id, bool ok, string? error, CancellationToken ct)
+    {
+        try
+        {
+            await api.AckJobAsync(id, ok, error, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "ack(ok={Ok}) for job {JobId} failed; will not retry from here", ok, id);
         }
     }
 

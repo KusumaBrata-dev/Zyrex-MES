@@ -8,6 +8,8 @@ public sealed class FakeApi : IAgentApiClient
 {
     public List<PrintJobDto> Pending { get; set; } = [];
     public Exception? ClaimError { get; set; }
+    /// <summary>When set, ack(ok=true) throws (simulates a broken ack channel after printing).</summary>
+    public Exception? AckTrueError { get; set; }
     public int ClaimCalls;
     public List<(long Id, bool Ok, string? Error)> Acks { get; } = [];
 
@@ -20,6 +22,7 @@ public sealed class FakeApi : IAgentApiClient
 
     public Task AckJobAsync(long id, bool ok, string? error, CancellationToken ct = default)
     {
+        if (ok && AckTrueError is not null) throw AckTrueError;
         lock (Acks) Acks.Add((id, ok, error));
         return Task.CompletedTask;
     }
@@ -115,6 +118,27 @@ public class PollingServiceTests : IDisposable
         _api.Pending = [new PrintJobDto(5, "SN_LABEL", "{}", 0)];
         await _service.ProcessPendingJobsAsync(CancellationToken.None);
         Assert.Single(_api.Acks, a => a.Id == 5 && a.Ok);
+    }
+
+    [Fact]
+    public async Task Ack_True_Failure_Sends_No_Ack_False_And_Loop_Survives()
+    {
+        _api.Pending = [new PrintJobDto(3, "SN_LABEL", "{}", 0)];
+        _api.AckTrueError = new HttpRequestException("ack channel down");
+
+        await _service.ProcessPendingJobsAsync(CancellationToken.None);
+
+        // Label printed, but ack(true) failed: no ack(false) may be sent.
+        Assert.Single(_printer.Printed);
+        Assert.Empty(_api.Acks);
+
+        // Loop stays alive: next tick processes normally.
+        _api.AckTrueError = null;
+        _api.Pending = [new PrintJobDto(4, "SN_LABEL", "{}", 0)];
+        await _service.ProcessPendingJobsAsync(CancellationToken.None);
+        var ack = Assert.Single(_api.Acks);
+        Assert.Equal(4, ack.Id);
+        Assert.True(ack.Ok);
     }
 
     [Fact]
