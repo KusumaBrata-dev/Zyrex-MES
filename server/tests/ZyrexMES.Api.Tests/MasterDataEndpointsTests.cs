@@ -13,7 +13,7 @@ public class MasterDataEndpointsTests(CustomWebAppFactory factory) : IClassFixtu
     {
         // Clean up leftovers from previous runs so reruns stay idempotent.
         using var db = factory.CreateDb();
-        foreach (var s in db.Stations.Where(x => x.Code == "ST-MD-QC").ToList())
+        foreach (var s in db.Stations.Where(x => x.Code == "ST-MD-QC" || x.Code == "ST-MD-QC2").ToList())
             db.Stations.Remove(s);
         foreach (var l in db.Lines.Where(x => new[] { "L-MD1", "L-MD2", "L-MD3", "L-MD4", "L-MD5" }.Contains(x.Code)).ToList())
             db.Lines.Remove(l);
@@ -80,6 +80,40 @@ public class MasterDataEndpointsTests(CustomWebAppFactory factory) : IClassFixtu
         Assert.Equal(HttpStatusCode.NoContent, del.StatusCode);
         var list = await admin.GetFromJsonAsync<JsonElement>("/api/lines?active=true");
         Assert.DoesNotContain(list.EnumerateArray(), e => e.GetProperty("code").GetString() == "L-MD4");
+    }
+
+    [Fact]
+    public async Task Update_Line_Code_To_Existing_Code_Returns_409()
+    {
+        var (_, leader, _) = await ClientsAsync();
+        await leader.PostAsJsonAsync("/api/lines", new { code = "L-MD1", name = "MD One" });
+        await leader.PostAsJsonAsync("/api/lines", new { code = "L-MD2", name = "MD Two" });
+        var list = await leader.GetFromJsonAsync<JsonElement>("/api/lines");
+        var source = list.EnumerateArray().First(e => e.GetProperty("code").GetString() == "L-MD1");
+        var res = await leader.PutAsJsonAsync($"/api/lines/{source.GetProperty("id").GetInt32()}",
+            new { code = "L-MD2", name = "MD One", isActive = true });
+        Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
+        var body = await JsonDocument.ParseAsync(await res.Content.ReadAsStreamAsync());
+        Assert.Equal("code already exists", body.RootElement.GetProperty("error").GetString());
+    }
+
+    [Fact]
+    public async Task Update_Station_Code_To_Existing_Code_Returns_409()
+    {
+        var (_, leader, _) = await ClientsAsync();
+        var lineRes = await leader.PostAsJsonAsync("/api/lines", new { code = "L-MD5", name = "MD Five" });
+        var lineId = (await lineRes.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("id").GetInt32();
+        await leader.PostAsJsonAsync("/api/stations", new { lineId, code = "ST-MD-QC", name = "QC MD", processType = "QC" });
+        var second = await leader.PostAsJsonAsync("/api/stations",
+            new { lineId, code = "ST-MD-QC2", name = "QC MD Two", processType = "QC" });
+        Assert.True(second.StatusCode is HttpStatusCode.Created or HttpStatusCode.Conflict); // idempotent for reruns
+        var stations = await leader.GetFromJsonAsync<JsonElement>("/api/stations");
+        var source = stations.EnumerateArray().First(e => e.GetProperty("code").GetString() == "ST-MD-QC2");
+        var res = await leader.PutAsJsonAsync($"/api/stations/{source.GetProperty("id").GetInt32()}",
+            new { code = "ST-MD-QC", name = "QC MD Two", processType = "QC", isEnabled = true });
+        Assert.Equal(HttpStatusCode.Conflict, res.StatusCode);
+        var body = await JsonDocument.ParseAsync(await res.Content.ReadAsStreamAsync());
+        Assert.Equal("code already exists", body.RootElement.GetProperty("error").GetString());
     }
 
     [Fact]
