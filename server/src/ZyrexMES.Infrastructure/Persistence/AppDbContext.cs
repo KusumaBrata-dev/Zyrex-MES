@@ -24,6 +24,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<LegacyProductSnapshot> LegacyProductSnapshots => Set<LegacyProductSnapshot>();
     public DbSet<LegacyRoutingSnapshot> LegacyRoutingSnapshots => Set<LegacyRoutingSnapshot>();
     public DbSet<LegacyTransactionSnapshot> LegacyTransactionSnapshots => Set<LegacyTransactionSnapshot>();
+    public DbSet<Alert> Alerts => Set<Alert>();
 
     protected override void OnModelCreating(ModelBuilder b) => b.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 }

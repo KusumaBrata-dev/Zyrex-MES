@@ -11,6 +11,7 @@ using ZyrexMES.Api.Modules.Auth;
 using ZyrexMES.Api.Modules.MasterData;
 using ZyrexMES.Api.Modules.Migration;
 using ZyrexMES.Api.Modules.Production;
+using ZyrexMES.Api.Modules.Insights;
 using ZyrexMES.Api.Modules.Printing;
 using ZyrexMES.Api.Modules.Quality;
 using ZyrexMES.Api.Modules.Reports;
@@ -48,6 +49,8 @@ builder.Services
 builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IScanResultBroadcaster, SignalRScanResultBroadcaster>();
+builder.Services.Configure<InsightsOptions>(builder.Configuration.GetSection("Insights"));
+builder.Services.AddHostedService<AnomalyDetectorService>();
 builder.Services.AddRateLimiter(opts =>
 {
     opts.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -106,6 +109,7 @@ app.MapProductionEndpoints();
 app.MapQualityEndpoints();
 app.MapPrintingEndpoints();
 app.MapReportsEndpoints();
+app.MapInsightsEndpoints();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapHub<ProductionHub>("/hubs/production");
 
