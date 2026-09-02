@@ -126,3 +126,33 @@ export async function getNgList(params: {
   if (params.pageSize !== undefined) query.set("pageSize", String(params.pageSize));
   return request<NgListResponse>(`/api/reports/ng-list?${query.toString()}`);
 }
+
+export interface LineGridStation {
+  stationId: number;
+  stationCode: string;
+  name: string;
+  outputToday: number;
+  ngToday: number;
+  lastEventAtUtc: string | null;
+  status: string;
+}
+export interface LineGridLine {
+  lineCode: string;
+  stations: LineGridStation[];
+}
+export interface LineGridDto {
+  lines: LineGridLine[];
+}
+export async function getLineGrid(): Promise<LineGridDto> {
+  return request<LineGridDto>("/api/reports/line-grid");
+}
+
+export interface ThresholdsDto {
+  minYieldPercent: number;
+  yieldDropPercent: number;
+  ngSpikePerHour: number;
+  evaluationIntervalMinutes: number;
+}
+export async function getThresholds(): Promise<ThresholdsDto> {
+  return request<ThresholdsDto>("/api/insights/thresholds");
+}
