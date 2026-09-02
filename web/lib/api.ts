@@ -147,6 +147,30 @@ export async function getLineGrid(): Promise<LineGridDto> {
   return request<LineGridDto>("/api/reports/line-grid");
 }
 
+export interface YieldTrendPoint {
+  date: string;
+  output: number;
+  ng: number;
+  yieldPercent: number | null;
+}
+export async function getYieldTrend(days = 7, lineCode?: string): Promise<YieldTrendPoint[]> {
+  const q = new URLSearchParams({ days: String(days) });
+  if (lineCode) q.set("lineCode", lineCode);
+  const data = await request<{ points: YieldTrendPoint[] }>(`/api/insights/yield-trend?${q.toString()}`);
+  return data.points;
+}
+
+export interface NgParetoItem {
+  ngCode: string;
+  count: number;
+}
+export async function getNgPareto(from: string, to: string, lineCode?: string): Promise<NgParetoItem[]> {
+  const q = new URLSearchParams({ from, to });
+  if (lineCode) q.set("lineCode", lineCode);
+  const data = await request<{ items: NgParetoItem[] }>(`/api/insights/ng-pareto?${q.toString()}`);
+  return data.items;
+}
+
 export interface ThresholdsDto {
   minYieldPercent: number;
   yieldDropPercent: number;

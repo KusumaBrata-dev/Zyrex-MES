@@ -67,6 +67,9 @@ export default function DashboardPage() {
         >
           TV mode
         </Link>
+        <Link href="/dashboard/insights" className="text-sm text-zbright underline" data-testid="insights-link">
+          Insights
+        </Link>
         {thresholds && (
           <span className="ml-auto rounded-full bg-neutral-100 px-3 py-1 text-xs dark:bg-neutral-800" data-testid="thresholds-badge">
             yield &lt; {thresholds.minYieldPercent}% · drop {thresholds.yieldDropPercent}% · NG/h {thresholds.ngSpikePerHour}

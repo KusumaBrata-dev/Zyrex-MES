@@ -30,3 +30,11 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Print-to-PDF: hide chrome, keep only report content */
+@media print {
+  header,
+  .no-print {
+    display: none !important;
+  }
+}
