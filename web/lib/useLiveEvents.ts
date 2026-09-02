@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TOKEN_KEY } from "@/lib/api";
+import { TOKEN_KEY, type AlertDto } from "@/lib/api";
 
 const API = process.env.NEXT_PUBLIC_API_BASE ?? "";
 
@@ -13,18 +13,35 @@ export type LiveEvent = {
   raw: unknown;
 };
 
+function normalizeAlert(payload: unknown): AlertDto | null {
+  const p = payload as Record<string, unknown>;
+  const id = (p.id as number) ?? (p.Id as number);
+  if (typeof id !== "number") return null;
+  return {
+    id,
+    type: (p.type as string) ?? (p.Type as string) ?? "unknown",
+    severity: (p.severity as string) ?? (p.Severity as string) ?? "info",
+    message: (p.message as string) ?? (p.Message as string) ?? "",
+    lineCode: (p.lineCode as string) ?? (p.LineCode as string) ?? null,
+    createdAtUtc: (p.createdAtUtc as string) ?? (p.CreatedAtUtc as string) ?? new Date().toISOString(),
+    acknowledgedAtUtc: (p.acknowledgedAtUtc as string | null) ?? (p.AcknowledgedAtUtc as string | null) ?? null,
+  };
+}
+
 /**
  * Single HubConnection to /hubs/production (JWT via accessTokenFactory).
  * Joins each lineCode group, exposes lastEvent, auto-reconnect.
+ * `opts.onAlert` receives broadcast AlertRaised events (sent to all clients,
+ * no line group required) — pass an empty lineCodes array for alerts-only.
  */
-export function useLiveEvents(lineCodes: string[]): LiveEvent | null {
+export function useLiveEvents(lineCodes: string[], opts?: { onAlert?: (alert: AlertDto) => void }): LiveEvent | null {
   const [lastEvent, setLastEvent] = useState<LiveEvent | null>(null);
   const key = JSON.stringify([...lineCodes].sort());
+  const onAlert = opts?.onAlert;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const codes = JSON.parse(key) as string[];
-    if (codes.length === 0) return;
 
     let cancelled = false;
     let conn: {
@@ -58,6 +75,10 @@ export function useLiveEvents(lineCodes: string[]): LiveEvent | null {
         c.on("ScanAccepted", emit("ScanAccepted"));
         c.on("ScanRejected", emit("ScanRejected"));
         c.on("QcFailed", emit("QcFailed"));
+        c.on("AlertRaised", (payload: unknown) => {
+          const alert = normalizeAlert(payload);
+          if (alert) onAlert?.(alert);
+        });
 
         await c.start();
         if (cancelled) {
@@ -85,13 +106,14 @@ export function useLiveEvents(lineCodes: string[]): LiveEvent | null {
           conn.off("ScanAccepted");
           conn.off("ScanRejected");
           conn.off("QcFailed");
+          conn.off("AlertRaised");
           void conn.stop();
         } catch {
           // ignore
         }
       }
     };
-  }, [key]);
+  }, [key, onAlert]);
 
   return lastEvent;
 }

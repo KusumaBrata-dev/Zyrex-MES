@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import GridBoard from "@/components/dashboard/GridBoard";
-import { authHeaders } from "@/lib/api";
+import AlertsPanel from "@/components/dashboard/AlertsPanel";
+import { authHeaders, type AlertDto } from "@/lib/api";
+import { useAlerts } from "@/lib/useAlerts";
+import { useLiveEvents } from "@/lib/useLiveEvents";
+
+const TOAST_MS = 4_000;
 
 const API = process.env.NEXT_PUBLIC_API_BASE ?? "";
 
@@ -18,6 +23,24 @@ export default function DashboardPage() {
   const [filterLine, setFilterLine] = useState("All");
   const [lines, setLines] = useState<string[]>([]);
   const [thresholds, setThresholds] = useState<Thresholds | null>(null);
+  const { alerts, push, ack } = useAlerts();
+  const [toast, setToast] = useState<AlertDto | null>(null);
+
+  // Realtime AlertRaised → prepend panel + short red toast
+  const onAlert = useCallback(
+    (a: AlertDto) => {
+      push(a);
+      setToast(a);
+    },
+    [push],
+  );
+  useLiveEvents([], { onAlert });
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), TOAST_MS);
+    return () => window.clearTimeout(t);
+  }, [toast]);
 
   useEffect(() => {
     async function load() {
@@ -70,6 +93,14 @@ export default function DashboardPage() {
         <Link href="/dashboard/insights" className="text-sm text-zbright underline" data-testid="insights-link">
           Insights
         </Link>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            alerts.length > 0 ? "bg-zbright text-white" : "bg-neutral-100 dark:bg-neutral-800"
+          }`}
+          data-testid="alerts-badge"
+        >
+          {alerts.length}
+        </span>
         {thresholds && (
           <span className="ml-auto rounded-full bg-neutral-100 px-3 py-1 text-xs dark:bg-neutral-800" data-testid="thresholds-badge">
             yield &lt; {thresholds.minYieldPercent}% · drop {thresholds.yieldDropPercent}% · NG/h {thresholds.ngSpikePerHour}
@@ -77,7 +108,22 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <GridBoard filterLine={filterLine} />
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <GridBoard filterLine={filterLine} />
+        </div>
+        <AlertsPanel alerts={alerts} onAck={(id) => void ack(id)} />
+      </div>
+
+      {toast && (
+        <div
+          role="alert"
+          className="fixed bottom-4 right-4 rounded bg-zbright px-4 py-3 text-sm font-semibold text-white shadow-lg"
+          data-testid="alert-toast"
+        >
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }

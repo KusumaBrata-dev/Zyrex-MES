@@ -171,6 +171,22 @@ export async function getNgPareto(from: string, to: string, lineCode?: string): 
   return data.items;
 }
 
+export interface AlertDto {
+  id: number;
+  type: string;
+  severity: string;
+  message: string;
+  lineCode: string | null;
+  createdAtUtc: string;
+  acknowledgedAtUtc: string | null;
+}
+export async function getAlerts(unackedOnly = true, take = 50): Promise<AlertDto[]> {
+  return request<AlertDto[]>(`/api/alerts?unackedOnly=${unackedOnly}&take=${take}`);
+}
+export async function ackAlert(id: number): Promise<void> {
+  await request<unknown>(`/api/alerts/${id}/ack`, { method: "POST" });
+}
+
 export interface ThresholdsDto {
   minYieldPercent: number;
   yieldDropPercent: number;
