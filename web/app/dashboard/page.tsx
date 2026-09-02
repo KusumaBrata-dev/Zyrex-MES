@@ -60,7 +60,11 @@ export default function DashboardPage() {
             ))}
           </select>
         </label>
-        <Link href="/dashboard?tv=1" className="text-sm text-zbright underline" data-testid="tv-link">
+        <Link
+          href={`/dashboard/tv/${filterLine === "All" ? (lines[0] ?? "") : filterLine}`}
+          className="text-sm text-zbright underline"
+          data-testid="tv-link"
+        >
           TV mode
         </Link>
         {thresholds && (

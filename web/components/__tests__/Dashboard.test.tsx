@@ -57,9 +57,18 @@ describe("Dashboard page", () => {
   it("shows header, TV link and thresholds badge", async () => {
     render(<DashboardPage />);
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByTestId("tv-link")).toHaveAttribute("href", "/dashboard?tv=1");
+    // TV mode targets the first line until the selector picks another one
+    await waitFor(() => expect(screen.getByTestId("tv-link")).toHaveAttribute("href", "/dashboard/tv/L01"));
     await waitFor(() => expect(screen.getByTestId("thresholds-badge")).toBeInTheDocument());
     expect(screen.getByTestId("thresholds-badge").textContent).toContain("95");
+  });
+
+  it("TV link follows the selected line", async () => {
+    render(<DashboardPage />);
+    await waitFor(() => expect(screen.getByTestId("line-section-L01")).toBeInTheDocument());
+    const select = screen.getByTestId("line-filter") as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: "L02" } });
+    await waitFor(() => expect(screen.getByTestId("tv-link")).toHaveAttribute("href", "/dashboard/tv/L02"));
   });
 
   it("line selector filters grid", async () => {

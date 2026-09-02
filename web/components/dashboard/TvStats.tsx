@@ -1,249 +1,178 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { authHeaders } from "@/lib/api";
+import { useLiveEvents, type LiveEvent } from "@/lib/useLiveEvents";
 
-interface StationStat {
-  id: number;
-  code: string;
+const API = process.env.NEXT_PUBLIC_API_BASE ?? "";
+const REFRESH_MS = 10_000;
+const MAX_EVENTS = 5;
+
+interface StationDto {
+  stationId: number;
+  stationCode: string;
   name: string;
-  output: number;
-  ng: number;
-  yield: number;
-  status: "active" | "idle";
+  outputToday: number;
+  ngToday: number;
   lastEventAtUtc: string | null;
+  status: string;
 }
-
-interface TvStatsProps {
+interface LineDto {
   lineCode: string;
+  stations: StationDto[];
+}
+interface GridDto {
+  lines: LineDto[];
 }
 
-export default function TvStats({ lineCode }: TvStatsProps) {
-  const [stations, setStations] = useState<StationStat[]>([]);
+function formatTime(atUtc: string): string {
+  const d = new Date(atUtc);
+  return Number.isNaN(d.getTime()) ? atUtc : d.toLocaleTimeString();
+}
+
+/**
+ * Andon TV fullscreen view for a single line. Polls line-grid every 10s
+ * (client-side filtered) and applies live hub events optimistically,
+ * keeping the last few events visible as a scrolling feed.
+ */
+export default function TvStats({ lineCode }: { lineCode: string }) {
+  const [line, setLine] = useState<LineDto | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [events, setEvents] = useState<LiveEvent[]>([]);
+
+  const fetchGrid = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/reports/line-grid`, {
+        headers: { ...authHeaders() },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as GridDto;
+      const found = data.lines.find((l) => l.lineCode === lineCode) ?? null;
+      setLine(found);
+      setNotFound(!found);
+    } catch {
+      // keep last known state; next tick retries
+    }
+  }, [lineCode]);
 
   useEffect(() => {
-    let cancelled = false;
-    let interval: ReturnType<typeof setInterval>;
+    void fetchGrid();
+    const t = window.setInterval(() => void fetchGrid(), REFRESH_MS);
+    return () => window.clearInterval(t);
+  }, [fetchGrid]);
 
-    const fetchStats = async () => {
-      try {
-        // Fetch line-grid for stations in this line
-        const stationsRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE ?? ""}/api/reports/line-grid`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("kiosk_token") || ""}`,
-            },
-          });
-        if (!stationsRes.ok) throw new Error("Failed to fetch stations");
-        const stationsData = await stationsRes.json();
-        const lineData = stationsData.lines.find((l: any) => l.lineCode === lineCode);
-        if (!lineData) return;
-        const stationIds = lineData.stations.map((s: any) => s.id);
+  const liveEvent = useLiveEvents([lineCode]);
 
-        // Fetch station-summary for each station
-        const summaries = await Promise.all(
-          stationIds.map(async (sid) => {
-            const res = await fetch(
-              `${process.env.NEXT_PUBLIC_API_BASE}/api/reports/station-summary?stationId=${sid}&date=${new Date().toISOString().split("T")[0]}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${localStorage.getItem("kiosk_token") || ""}`,
-                },
-              });
-            const data = await res.json();
-            return { stationId: sid, data: await res.json() };
-          })
-        );
-
-        const summariesByStation = Object.fromEntries(summaries.map(s => [s.stationId, s.data]));
-
-        const stationsWithStats = lineData.stations.map((s: any) => {
-          const summary = summariesByStation[s.id];
-          return {
-            id: s.id,
-            code: s.code,
-            name: s.name,
-            output: summary?.output ?? 0,
-            ng: summary?.ng ?? 0,
-            yield: summary?.output
-              ? Math.round(100 * (summary.output - summary.ng) / summary.output * 10) / 10
-              : 0,
-            status: summary?.ng && summary.ng > 0 ? "active" : "idle",
-            lastEventAtUtc: summary?.lastEventAtUtc ?? null,
-          };
-        });
-
-        setStations(stationsWithStats);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-
-    fetchStats();
-    interval = setInterval(fetchStats, 10000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [lineCode]);
-
-  if (stations.length === 0) {
-    return (
-      <div className="flex h-screen items-center justify-center text-white/50">
-        Loading line {lineCode}...
-      </div>
-    );
-
-    const totalOutput = stations.reduce((sum, s) => sum + s.output, 0);
-    const totalNg = stations.reduce((sum, s) => sum + s.ng, 0);
-    const totalYield = stations.length
-      ? Math.round(stations.reduce((sum, s) => sum + s.yield, 0) / stations.length * 10) / 10
-      : 0;
-
-    return (
-      <div className="flex flex-col h-screen bg-black text-white p-8" data-testid="tv-page">
-        <header className="flex items-center justify-between p-6 border-b border-white/20">
-          <h1 className="text-4xl font-bold">Line {lineCode}</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm opacity-70">{new Date().toLocaleTimeString()}</span>
-            <button
-              onClick={() => window.history.back()}
-              className="px-4 py-2 rounded bg-white/10 hover:bg-white/20"
-            >
-              Exit TV
-            </button>
-          </div>
-        </header>
-
-        <main className="flex-1 flex flex-col gap-8 p-6 overflow-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard label="OUTPUT" value={stations.reduce((sum, s) => sum + s.output, 0)} unit="pcs" />
-            <StatCard label="NG" value={stations.reduce((s, s) => s + s.ng, 0)} color="red" />
-            <StatCard label="YIELD" value={`${stations.length ? Math.round(stations.reduce((s, s) => s + s.yield, 0) / stations.length * 10) / 10 : 0}%`} />
-          </div>
-
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold mb-4">Recent Events</h2>
-            <ul className="space-y-2" role="list">
-              {/* events will be injected here */}
-            </ul>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  const stationsRes = await fetch(
-    `${process.env.NEXT_PUBLIC_API_BASE ?? ""}/api/reports/line-grid`,
-    {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("kiosk_token") || ""}`,
-      },
-    });
-    if (!stationsRes.ok) throw new Error("Failed to fetch stations");
-    const stationsData = await stationsRes.json();
-    const lineData = stationsRes.lines.find((l: any) => l.lineCode === lineCode);
-    if (!lineData) return;
-
-    const stationIds = lineData.stations.map((s: any) => s.id);
-    const summaries = await Promise.all(
-      stationIds.map(async (sid) => {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE}/api/reports/station-summary?stationId=${sid}&date=${new Date().toISOString().split("T")[0]}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("kiosk_token") || ""}`,
-            },
-          });
-        const data = await res.json();
-        return { stationId: sid, data: await res.json() };
-      })
-    );
-
-    const summariesByStation = Object.fromEntries(summaries.map(s => [s.stationId, s.data]));
-
-    const stationsWithStats = lineData.stations.map((s: any) => {
-      const summary = summariesByStation[s.id];
+  useEffect(() => {
+    if (!liveEvent || liveEvent.lineCode !== lineCode) return;
+    const { type, stationCode, atUtc } = liveEvent;
+    setEvents((prev) => [liveEvent, ...prev.filter((e) => e.atUtc !== atUtc)].slice(0, MAX_EVENTS));
+    setLine((prev) => {
+      if (!prev) return prev;
+      const alreadyApplied = prev.stations.some((s) => s.stationCode === stationCode && s.lastEventAtUtc === atUtc);
+      if (alreadyApplied) return prev;
       return {
-        id: s.id,
-        code: s.code,
-        name: s.name,
-        output: summary?.output ?? 0,
-        ng: summary?.ng ?? 0,
-        yield: summary?.output
-          ? Math.round(100 * (summary.output - summary.ng) / summary.output * 10) / 10
-          : 0,
-        status: summary?.ng && summary.ng > 0 ? "active" : "idle",
-        lastEventAtUtc: summary?.lastEventAtUtc ?? null,
-      });
+        ...prev,
+        stations: prev.stations.map((s) =>
+          s.stationCode !== stationCode
+            ? s
+            : {
+                ...s,
+                outputToday: s.outputToday + (type === "ScanAccepted" ? 1 : 0),
+                ngToday: s.ngToday + (type === "QcFailed" ? 1 : 0),
+                lastEventAtUtc: atUtc,
+                status: "active",
+              },
+        ),
+      };
     });
+  }, [liveEvent, lineCode]);
 
-    setStations(stationsWithStats);
-  }, [lineCode]);
-
-  if (stations.length === 0) {
+  if (notFound) {
     return (
-      <div className="flex h-screen items-center justify-center text-white/50">
-        Loading line {lineCode}...
+      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-black text-white" data-testid="tv-not-found">
+        <p className="text-2xl font-semibold">Line {lineCode} not found</p>
+        <Link href="/dashboard" className="rounded bg-white/10 px-4 py-2 hover:bg-white/20" data-testid="tv-exit">
+          Exit TV
+        </Link>
       </div>
     );
+  }
 
-    const totalOutput = stations.reduce((sum, s) => sum + s.output, 0);
-    const totalNg = stations.reduce((sum, s) => sum + s.ng, 0);
-    const totalYield = stations.length
-      ? Math.round(stations.reduce((sum, s) => sum + s.yield, 0) / stations.length * 10) / 10
-      : 0;
-
+  if (!line) {
     return (
-      <div className="flex flex-col h-screen bg-black text-white p-8" data-testid="tv-page">
-        <header className="flex items-center justify-between p-6 border-b border-white/20">
-          <h1 className="text-4xl font-bold">Line {lineCode}</h1>
-          <div className="flex items-center gap-4">
-            <span className="text-sm opacity-70">{new Date().toLocaleTimeString()}</span>
-            <button
-              onClick={() => window.history.back()}
-              className="px-4 py-2 rounded bg-white/10 hover:bg-white/20"
-            >
-              Exit TV
-            </button>
-          </div>
-        </header>
+      <div className="flex h-screen items-center justify-center bg-black text-white/50" data-testid="tv-loading">
+        Loading line {lineCode}…
+      </div>
+    );
+  }
 
-        <main className="flex-1 flex flex-col gap-8 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard label="OUTPUT" value={totalOutput} unit="pcs" />
-            <StatCard label="NG" value={totalNg} color="red" />
-            <StatCard label="YIELD" value={`${totalYield.toFixed(1)}%`} />
-          </div>
+  const totalOutput = line.stations.reduce((sum, s) => sum + s.outputToday, 0);
+  const totalNg = line.stations.reduce((sum, s) => sum + s.ngToday, 0);
+  const yieldPercent = totalOutput > 0 ? Math.round(((totalOutput - totalNg) / totalOutput) * 1000) / 10 : null;
 
-          <div className="flex-1">
-            <h2 className="text-lg font-semibold mb-4">Recent Events</h2>
+  return (
+    <div className="flex h-screen cursor-none flex-col bg-black p-8 text-white" data-testid="tv-page">
+      <header className="flex items-center justify-between border-b border-white/20 pb-6">
+        <h1 className="text-6xl font-black tracking-wide" data-testid="tv-line-code">
+          LINE {lineCode}
+        </h1>
+        <Link href="/dashboard" className="cursor-pointer rounded bg-white/10 px-4 py-2 text-sm hover:bg-white/20" data-testid="tv-exit">
+          Exit TV
+        </Link>
+      </header>
+
+      <main className="flex flex-1 flex-col gap-8 overflow-hidden pt-8">
+        <div className="grid grid-cols-3 gap-6">
+          <div className="rounded-2xl bg-white/5 p-6 text-center">
+            <p className="text-sm font-bold tracking-widest text-white/60">OUTPUT</p>
+            <p className="mt-2 text-8xl font-black text-emerald-400" data-testid="tv-output">
+              {totalOutput}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white/5 p-6 text-center">
+            <p className="text-sm font-bold tracking-widest text-white/60">NG</p>
+            <p className="mt-2 text-8xl font-black text-zbright" data-testid="tv-ng">
+              {totalNg}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white/5 p-6 text-center">
+            <p className="text-sm font-bold tracking-widest text-white/60">YIELD</p>
+            <p className="mt-2 text-8xl font-black" data-testid="tv-yield">
+              {yieldPercent === null ? "—" : `${yieldPercent}%`}
+            </p>
+          </div>
+        </div>
+
+        <section className="flex-1 overflow-hidden">
+          <h2 className="mb-3 text-lg font-semibold text-white/70">Recent Events</h2>
+          {events.length === 0 ? (
+            <p className="text-white/40" data-testid="tv-events-empty">
+              No events yet.
+            </p>
+          ) : (
             <ul className="space-y-2" role="list">
-              {/* events will be injected here */}
+              {events.map((e) => (
+                <li
+                  key={`${e.atUtc}-${e.stationCode}-${e.type}`}
+                  className="flex items-center gap-4 rounded bg-white/5 px-4 py-2 text-lg"
+                  data-testid="tv-event-item"
+                >
+                  <span
+                    className={`inline-block h-3 w-3 rounded-full ${
+                      e.type === "ScanAccepted" ? "bg-emerald-400" : e.type === "QcFailed" ? "bg-zbright" : "bg-amber-400"
+                    }`}
+                  />
+                  <span className="font-semibold">{e.type}</span>
+                  <span className="text-white/70">{e.stationCode}</span>
+                  <span className="ml-auto text-sm text-white/50">{formatTime(e.atUtc)}</span>
+                </li>
+              ))}
             </ul>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  interface StatCardProps {
-    label: string;
-    value: string | number;
-    unit?: string;
-    color?: "red" | "green" | "blue";
-  }
-
-  function StatCard({ label, value, unit, color }: StatCardProps) {
-    return (
-      <div className={`p-6 rounded-xl border border-white/10 ${color === "red" ? "border-red-500/30" : color === "green" ? "border-green-500/30" : "border-blue-500/30"} bg-white/5`}>
-        <p className="text-sm opacity-70 mb-1">{label}</p>
-        <p className={`text-4xl font-bold ${color === "red" ? "text-red-400" : color === "green" ? "text-green-400" : "text-blue-400"}`}>
-          {value}
-          {unit && <span className="text-xl font-normal ml-1 opacity-70">{unit}</span>}
-        </p>
-      </div>
-    );
-  }
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}
