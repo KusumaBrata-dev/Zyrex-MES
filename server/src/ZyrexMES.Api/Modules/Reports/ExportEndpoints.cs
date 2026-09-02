@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using ClosedXML.Excel;
 using ZyrexMES.Api.Common;
+using ZyrexMES.Api.Modules.Reports;
 using ZyrexMES.Domain.Entities;
-using ZyrexMES.Domain.Enums;
 using ZyrexMES.Infrastructure.Persistence;
 
 namespace ZyrexMES.Api.Modules.Reports;
@@ -32,8 +32,8 @@ public static class ExportEndpoints
                 .OrderByDescending(q => q.CheckedAtUtc)
                 .Select(q => new
                 {
-                    q.Unit.SerialNumber,
-                    StationCode = q.Station.Code,
+                    SerialNumber = db.Units.Where(u => u.Id == q.UnitId).Select(u => u.SerialNumber).FirstOrDefault(),
+                    StationCode = db.Stations.Where(s => s.Id == q.StationId).Select(s => s.Code).FirstOrDefault(),
                     NgCode = q.NgCode != null ? q.NgCode.Code : "Unknown",
                     q.Notes,
                     CheckedAtUtc = q.CheckedAtUtc

@@ -109,6 +109,7 @@ app.MapProductionEndpoints();
 app.MapQualityEndpoints();
 app.MapPrintingEndpoints();
 app.MapReportsEndpoints();
+app.MapExportEndpoints();
 app.MapInsightsEndpoints();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapHub<ProductionHub>("/hubs/production");
