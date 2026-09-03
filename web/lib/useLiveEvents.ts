@@ -54,10 +54,12 @@ export function useLiveEvents(lineCodes: string[], opts?: { onAlert?: (alert: Al
 
     async function connect() {
       try {
-        const { HubConnectionBuilder } = await import("@microsoft/signalr");
+        const { HubConnectionBuilder, HttpTransportType } = await import("@microsoft/signalr");
         const c = new HubConnectionBuilder()
           .withUrl(`${API}/hubs/production`, {
             accessTokenFactory: () => sessionStorage.getItem(TOKEN_KEY) ?? "",
+            // LongPolling: same-origin dev proxy rewrites can't carry websockets
+            transport: HttpTransportType.LongPolling,
           })
           .withAutomaticReconnect()
           .build() as unknown as typeof conn & { state: string };

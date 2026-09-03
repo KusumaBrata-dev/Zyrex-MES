@@ -32,7 +32,7 @@ export default function LoginPage() {
         className="w-full max-w-sm rounded-xl border border-black/10 bg-white p-8 shadow-lg dark:border-white/10 dark:bg-neutral-900"
       >
         <img src="/brand/logo-white.svg" alt="Zyrex" className="mx-auto mb-6 h-16 w-auto" />
-        <h1 className="mb-6 text-center text-xl font-semibold">Login Kiosk</h1>
+        <h1 className="mb-6 text-center text-xl font-semibold">Login</h1>
 
         <label className="mb-1 block text-sm font-medium" htmlFor="username">
           Username
