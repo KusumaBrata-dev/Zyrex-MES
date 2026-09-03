@@ -10,7 +10,11 @@ Fase 3: kiosk produksi (web/) + print agent BarTender (agent/).
 2. Print Agent: `dotnet publish agent/ZyrexMES.PrintAgent -c Release -r win-x64 --self-contained false` → install sebagai Windows Service (runbook lengkap: [docs/deploy/print-agent-deployment.md](docs/deploy/print-agent-deployment.md))
 3. Kiosk: `cd web && npm install && npm run dev` (:3000) — unit test `npm test`, E2E `npm run e2e`
 
-Ringkasan fase & status AC: [docs/plans/2026-08-24-phase3-summary.md](docs/plans/2026-08-24-phase3-summary.md).
+Ringkasan fase & status AC: [docs/plans/2026-08-24-phase4-summary.md](docs/plans/2026-08-24-phase4-summary.md) (terbaru) · [phase3](docs/plans/2026-08-24-phase3-summary.md).
+
+## Dashboard Monitoring (Phase 4)
+
+`GET /api/reports/line-grid` + SignalR hub `/hubs/production` (LongPolling via Next proxy `/hubs/:path*`) → `web/app/dashboard` grid 9 line realtime ≤2s (optimistic increment, 30s fallback) + selector All/per line + badge thresholds `GET /api/insights/thresholds` + TV fullscreen `/dashboard/tv/[lineCode]` (OUTPUT/NG/YIELD aggregate, 5 hub events, 10s poll, cursor-none) + insights `yield-trend`/`ng-pareto` SVG + alerts `GET /api/alerts` + Excel exports `/api/export/*.xlsx`. Config `Insights:{MinYieldPercent,YieldDropPercent,NgSpikePerHour,EvaluationIntervalMinutes}`; E2E `web/e2e/dashboard.spec.ts`.
 
 ## Quick Start
 
