@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using ZyrexMES.Api.Modules.Reports;
 using ZyrexMES.Domain.Entities;
 using ZyrexMES.Infrastructure.Persistence;
 
@@ -26,7 +27,7 @@ public class ReportsEndpointsTests(CustomWebAppFactory factory) : IClassFixture<
         db.Units.RemoveRange(db.Units.Where(u => u.SerialNumber.StartsWith("SN-REP")));
         db.Lines.RemoveRange(lines);
         db.Products.RemoveRange(db.Products.Where(p => p.Sku == "SKU-REP"));
-        db.NgCodes.RemoveRange(db.NgCodes.Where(n => n.Code == RepNgCode));
+        db.NgCodes.RemoveRange(db.NgCodes.Where(n => n.Code.StartsWith("REP-NG")));
         db.SaveChanges();
         return factory.CreateClient();
     }
@@ -235,6 +236,108 @@ public class ReportsEndpointsTests(CustomWebAppFactory factory) : IClassFixture<
         var refreshed = await admin.GetFromJsonAsync<JsonElement>("/api/reports/line-grid");
         Assert.Contains(refreshed.GetProperty("lines").EnumerateArray(),
             l => l.GetProperty("lineCode").GetString() == "L-REP-G2");
+    }
+
+    private async Task<int> AddQcFailWithNgAsync(int stationId, string ngCodeStr, DateTime checkedAtUtc)
+    {
+        using var db = factory.CreateDb();
+        var ng = await db.NgCodes.FirstOrDefaultAsync(n => n.Code == ngCodeStr);
+        if (ng is null)
+        {
+            ng = new NgCode { Code = ngCodeStr, Description = "pareto tmp ng" };
+            db.NgCodes.Add(ng);
+            await db.SaveChangesAsync();
+        }
+        var productId = db.Products.First(p => p.Sku == "SKU-REP").Id;
+        var userId = db.Users.First(u => u.Username == "admin").Id;
+        var unit = new Unit { SerialNumber = $"SN-REP-NG-{Guid.NewGuid():N}", ProductId = productId, Status = UnitStatus.InProgress, CreatedAtUtc = checkedAtUtc };
+        db.Units.Add(unit);
+        await db.SaveChangesAsync();
+        db.UnitTransactions.Add(new UnitTransaction { UnitId = unit.Id, StationId = stationId, UserId = userId, ScannedAtUtc = checkedAtUtc, Result = QcVerdict.Pass });
+        db.QcResults.Add(new QcResult { UnitId = unit.Id, StationId = stationId, UserId = userId, Verdict = QcVerdict.Fail, NgCodeId = ng.Id, Notes = "pareto", CheckedAtUtc = checkedAtUtc });
+        await db.SaveChangesAsync();
+        return unit.Id;
+    }
+
+    [Fact]
+    public async Task Yield_Trend_Seven_Days_Includes_Empty_Day_And_Filter()
+    {
+        var (admin, _) = await ClientsAsync();
+        var ctx = await SeedLineAsync("Y1");
+        var todayWib = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(ReportDtos.WibOffsetHours));
+        var yesterday = todayWib.AddDays(-1);
+        var (yStart, _) = ReportDtos.WibRange(yesterday);
+        var mid = yStart.AddHours(12);
+        var u = await AddUnitWithTxAsync("Y1", 91, ctx.StationAId, ctx.UserId, mid);
+        await AddQcFailAsync(u, ctx.StationAId, ctx.UserId, ctx.NgCodeId, mid.AddMinutes(1), "yield y1");
+        var res = await admin.GetAsync($"/api/insights/yield-trend?days=7&lineCode=L-REP-Y1");
+        Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+        var json = await res.Content.ReadFromJsonAsync<JsonElement>();
+        var points = json.GetProperty("points");
+        Assert.Equal(7, points.GetArrayLength());
+        var dates = points.EnumerateArray().Select(p => p.GetProperty("date").GetString()).ToList();
+        var sorted = dates.OrderBy(d => d).ToList();
+        Assert.Equal(sorted, dates);
+        var seeded = points.EnumerateArray().First(p => p.GetProperty("date").GetString() == yesterday.ToString("yyyy-MM-dd"));
+        Assert.Equal(1, seeded.GetProperty("output").GetInt32());
+        Assert.Equal(1, seeded.GetProperty("ng").GetInt32());
+        Assert.Equal(0, seeded.GetProperty("yieldPercent").GetDouble());
+        var empty = points.EnumerateArray().First(p => p.GetProperty("output").GetInt32() == 0);
+        Assert.Equal(0, empty.GetProperty("ng").GetInt32());
+        Assert.Equal(JsonValueKind.Null, empty.GetProperty("yieldPercent").ValueKind);
+        var res2 = await admin.GetFromJsonAsync<JsonElement>($"/api/insights/yield-trend?days=7&lineCode=L-REP-NONEXIST-Y1");
+        foreach (var p in res2.GetProperty("points").EnumerateArray())
+        {
+            Assert.Equal(0, p.GetProperty("output").GetInt32());
+            Assert.Equal(0, p.GetProperty("ng").GetInt32());
+            Assert.Equal(JsonValueKind.Null, p.GetProperty("yieldPercent").ValueKind);
+        }
+    }
+
+    [Fact]
+    public async Task Ng_Pareto_Descending_And_Date_Filter()
+    {
+        var (admin, _) = await ClientsAsync();
+        var ctx = await SeedLineAsync("P1");
+        var todayWib = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(ReportDtos.WibOffsetHours));
+        var d2 = todayWib.AddDays(-2);
+        var d1 = todayWib.AddDays(-1);
+        var (d2Start, _) = ReportDtos.WibRange(d2);
+        var (d1Start, _) = ReportDtos.WibRange(d1);
+        var midD2 = d2Start.AddHours(12);
+        var midD1 = d1Start.AddHours(12);
+        var midD1b = d1Start.AddHours(13);
+        await AddQcFailWithNgAsync(ctx.StationAId, "REP-NG-A", midD2);
+        await AddQcFailWithNgAsync(ctx.StationAId, "REP-NG-A", midD1);
+        await AddQcFailWithNgAsync(ctx.StationBId, "REP-NG-B", midD1b);
+        var fromStr = d2.ToString("yyyy-MM-dd");
+        var toStr = d1.ToString("yyyy-MM-dd");
+        var res = await admin.GetFromJsonAsync<JsonElement>($"/api/insights/ng-pareto?from={fromStr}&to={toStr}&lineCode=L-REP-P1");
+        var items = res.GetProperty("items");
+        Assert.True(items.GetArrayLength() >= 2);
+        var list = items.EnumerateArray().ToList();
+        for (int i = 1; i < list.Count; i++)
+            Assert.True(list[i - 1].GetProperty("count").GetInt32() >= list[i].GetProperty("count").GetInt32());
+        var a = list.First(x => x.GetProperty("ngCode").GetString() == "REP-NG-A");
+        var b = list.First(x => x.GetProperty("ngCode").GetString() == "REP-NG-B");
+        Assert.Equal(2, a.GetProperty("count").GetInt32());
+        Assert.Equal(1, b.GetProperty("count").GetInt32());
+        var narrow = await admin.GetFromJsonAsync<JsonElement>($"/api/insights/ng-pareto?from={d1:yyyy-MM-dd}&to={d1:yyyy-MM-dd}&lineCode=L-REP-P1");
+        var narrowItems = narrow.GetProperty("items");
+        var narrowA = narrowItems.EnumerateArray().First(x => x.GetProperty("ngCode").GetString() == "REP-NG-A");
+        Assert.Equal(1, narrowA.GetProperty("count").GetInt32());
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _anon.GetAsync($"/api/insights/yield-trend?days=7&lineCode=L-REP-P1")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await _anon.GetAsync($"/api/insights/ng-pareto?from={fromStr}&to={toStr}")).StatusCode);
+        using (var db = factory.CreateDb())
+        {
+            var tmpIds = db.NgCodes.Where(n => n.Code == "REP-NG-A" || n.Code == "REP-NG-B").Select(n => n.Id).ToList();
+            var tmpUnitIds = db.QcResults.Where(q => q.NgCodeId.HasValue && tmpIds.Contains(q.NgCodeId.Value)).Select(q => q.UnitId).Distinct().ToList();
+            db.QcResults.RemoveRange(db.QcResults.Where(q => q.NgCodeId.HasValue && tmpIds.Contains(q.NgCodeId.Value)));
+            db.UnitTransactions.RemoveRange(db.UnitTransactions.Where(t => tmpUnitIds.Contains(t.UnitId)));
+            db.Units.RemoveRange(db.Units.Where(u => tmpUnitIds.Contains(u.Id)));
+            db.NgCodes.RemoveRange(db.NgCodes.Where(n => n.Code == "REP-NG-A" || n.Code == "REP-NG-B"));
+            await db.SaveChangesAsync();
+        }
     }
 
     [Fact]

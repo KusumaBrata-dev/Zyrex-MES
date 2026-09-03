@@ -68,6 +68,16 @@ export function seedE2eData(): void {
   `);
 }
 
+/** Supervisor login for dashboard E2E (ack-capable role). Same offline hash
+ *  as e2e_op → password is also "E2e!Pass123". */
+export function seedE2eSupervisor(): void {
+  psql(`
+    INSERT INTO "users" ("Username", "PasswordHash", "FullName", "Role", "IsActive")
+    VALUES ('e2e_sup', ${sqlStr(OP_HASH)}, 'E2E Supervisor', 'Supervisor', true)
+    ON CONFLICT ("Username") DO UPDATE SET "PasswordHash" = EXCLUDED."PasswordHash", "Role" = 'Supervisor', "IsActive" = true;
+  `);
+}
+
 /** Id of the seeded E2E station (for the /scan?stationId= URL pattern). */
 export function e2eStationId(): number {
   const out = execSync(

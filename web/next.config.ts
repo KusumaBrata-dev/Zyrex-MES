@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
         source: "/health",
         destination: `${process.env.API_ORIGIN ?? "http://localhost:8080"}/health`,
       },
+      {
+        // SignalR hub (useLiveEvents) — LongPolling only; dev rewrites can't
+        // carry websocket upgrades.
+        source: "/hubs/:path*",
+        destination: `${process.env.API_ORIGIN ?? "http://localhost:8080"}/hubs/:path*`,
+      },
     ];
   },
 };

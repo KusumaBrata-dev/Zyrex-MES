@@ -1,5 +1,7 @@
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -9,6 +11,7 @@ using ZyrexMES.Api.Modules.Auth;
 using ZyrexMES.Api.Modules.MasterData;
 using ZyrexMES.Api.Modules.Migration;
 using ZyrexMES.Api.Modules.Production;
+using ZyrexMES.Api.Modules.Insights;
 using ZyrexMES.Api.Modules.Printing;
 using ZyrexMES.Api.Modules.Quality;
 using ZyrexMES.Api.Modules.Reports;
@@ -39,12 +42,30 @@ builder.Services
             ValidAudience = builder.Configuration["Jwt:Audience"],
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+            ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30),
         };
     });
 builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<IScanResultBroadcaster, SignalRScanResultBroadcaster>();
+builder.Services.Configure<InsightsOptions>(builder.Configuration.GetSection("Insights"));
+builder.Services.AddHostedService<AnomalyDetectorService>();
+builder.Services.AddRateLimiter(opts =>
+{
+    opts.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    opts.AddPolicy("login", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = builder.Configuration.GetValue<int?>("Auth:LoginRateLimit:PermitLimit") ?? 5,
+                Window = TimeSpan.FromSeconds(builder.Configuration.GetValue<int?>("Auth:LoginRateLimit:WindowSeconds") ?? 60),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                AutoReplenishment = true,
+            }));
+});
 
 // Legacy MES (READ-ONLY): GetToken / CheckFlow / GetMesData only.
 builder.Services.Configure<LegacyOptions>(builder.Configuration.GetSection("Legacy"));
@@ -70,6 +91,7 @@ builder.Services.AddHttpClient<LegacyMesClient>((sp, client) =>
 var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseMiddleware<AuditMiddleware>();
 app.UseAuthorization();
@@ -87,6 +109,8 @@ app.MapProductionEndpoints();
 app.MapQualityEndpoints();
 app.MapPrintingEndpoints();
 app.MapReportsEndpoints();
+app.MapExportEndpoints();
+app.MapInsightsEndpoints();
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapHub<ProductionHub>("/hubs/production");
 

@@ -241,3 +241,19 @@ internal class LegacyTransactionSnapshotConfig : IEntityTypeConfiguration<Legacy
         b.Property(x => x.ImportedAtUtc).HasColumnType("timestamptz");
     }
 }
+
+internal class AlertConfig : IEntityTypeConfiguration<Alert>
+{
+    public void Configure(EntityTypeBuilder<Alert> b)
+    {
+        b.ToTable("alerts");
+        b.Property(x => x.Type).HasMaxLength(32);
+        b.Property(x => x.Severity).HasMaxLength(16);
+        b.Property(x => x.Message).HasMaxLength(512);
+        b.Property(x => x.LineCode).HasMaxLength(32);
+        b.Property(x => x.CreatedAtUtc).HasColumnType("timestamptz");
+        b.Property(x => x.AcknowledgedAtUtc).HasColumnType("timestamptz");
+        b.HasIndex(x => new { x.Type, x.LineCode, x.CreatedAtUtc });
+        b.HasIndex(x => x.AcknowledgedAtUtc);
+    }
+}

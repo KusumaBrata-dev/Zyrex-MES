@@ -41,6 +41,8 @@ public static class LinesEndpoints
             if (line is null) return Results.NotFound();
             var err = Validate(req.Code, req.Name);
             if (err is not null) return Results.BadRequest(new { error = err });
+            if (await db.Lines.AnyAsync(l => l.Code == req.Code && l.Id != id))
+                return Results.Conflict(new { error = "code already exists" });
             line.Code = req.Code!; line.Name = req.Name!; line.IsActive = req.IsActive;
             await db.SaveChangesAsync();
             return Results.NoContent();

@@ -15,6 +15,7 @@ public static class Seeder
                     .Select(c => c.Value).OfType<string>().ToArray();
         if (codes.Length == 0)
             codes = ["L01", "L02", "L03", "L04", "L05", "L06", "L07", "L08", "L09"];
+        codes = codes.Distinct().ToArray();
         var existing = db.Lines.Select(l => l.Code).ToHashSet();
         var missing = codes.Where(c => !existing.Contains(c)).ToList();
         if (missing.Count == 0) return;

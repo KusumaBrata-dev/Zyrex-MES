@@ -10,6 +10,7 @@ vi.mock("@/hooks/useServerHeartbeat", () => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   useSearchParams: () => ({ get: () => "5" }),
+  usePathname: () => "/scan",
 }));
 
 vi.mock("@/lib/api", async (importOriginal) => {

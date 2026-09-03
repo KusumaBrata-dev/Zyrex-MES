@@ -50,6 +50,8 @@ public static class StationsEndpoints
             if (station is null) return Results.NotFound();
             var err = Validate(req.Code, req.Name, req.ProcessType);
             if (err is not null) return Results.BadRequest(new { error = err });
+            if (await db.Stations.AnyAsync(s => s.LineId == station.LineId && s.Code == req.Code && s.Id != id))
+                return Results.Conflict(new { error = "code already exists" });
             station.Code = req.Code!; station.Name = req.Name!;
             station.ProcessType = req.ProcessType; station.IsEnabled = req.IsEnabled;
             await db.SaveChangesAsync();

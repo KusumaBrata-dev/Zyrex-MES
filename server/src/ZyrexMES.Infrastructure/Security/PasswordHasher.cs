@@ -18,9 +18,16 @@ public static class PasswordHasher
     {
         var parts = encoded.Split('$');
         if (parts.Length != 3 || parts[0] != "argon2id") return false;
-        var expected = Convert.FromBase64String(parts[2]);
-        var actual = Compute(password, Convert.FromBase64String(parts[1]));
-        return CryptographicOperations.FixedTimeEquals(expected, actual);
+        try
+        {
+            var expected = Convert.FromBase64String(parts[2]);
+            var actual = Compute(password, Convert.FromBase64String(parts[1]));
+            return CryptographicOperations.FixedTimeEquals(expected, actual);
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
     }
 
     private static byte[] Compute(string password, byte[] salt) =>

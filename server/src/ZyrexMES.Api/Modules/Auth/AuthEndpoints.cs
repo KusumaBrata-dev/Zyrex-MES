@@ -12,7 +12,7 @@ public static class AuthEndpoints
         {
             var result = await auth.LoginAsync(req.Username?.Trim() ?? "", req.Password ?? "", ct);
             return result is null ? Results.Unauthorized() : Results.Ok(result);
-        }).AllowAnonymous();
+        }).AllowAnonymous().RequireRateLimiting("login");
 
         app.MapGet("/api/auth/me", (ClaimsPrincipal principal) =>
         {

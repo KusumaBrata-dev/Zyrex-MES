@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ZyrexMES.Infrastructure.Persistence;
 
 namespace ZyrexMES.Api.Tests;
 
@@ -15,6 +17,23 @@ public class SeedTests(CustomWebAppFactory factory) : IClassFixture<CustomWebApp
         var lines = db.Lines.ToList(); // pattern predicates below are not translatable to SQL
         Assert.True(lines.Count >= 9);
         Assert.Equal(9, lines.Count(l => l.Code.StartsWith('L') && l.Code.Length == 3 && char.IsDigit(l.Code[1]) && char.IsDigit(l.Code[2])));
+    }
+
+    [Fact]
+    public void Seeder_Skips_Duplicate_Codes_Within_One_Call()
+    {
+        using var db = factory.CreateDb();
+        foreach (var l in db.Lines.Where(l => l.Code == "L-TDUP").ToList()) db.Lines.Remove(l);
+        db.SaveChanges();
+        var cfg = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Seed:DefaultLines:0"] = "L-TDUP",
+            ["Seed:DefaultLines:1"] = "L-TDUP", // duplicate in config must not double-insert
+        }).Build();
+        Seeder.SeedDefaults(db, cfg);
+        Assert.Equal(1, db.Lines.Count(l => l.Code == "L-TDUP"));
+        foreach (var l in db.Lines.Where(l => l.Code == "L-TDUP").ToList()) db.Lines.Remove(l);
+        db.SaveChanges();
     }
 
     [Fact]

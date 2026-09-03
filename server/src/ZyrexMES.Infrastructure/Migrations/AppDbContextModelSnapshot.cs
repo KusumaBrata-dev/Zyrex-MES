@@ -687,6 +687,48 @@ namespace ZyrexMES.Infrastructure.Migrations
                     b.ToTable("Units");
                 });
 
+            modelBuilder.Entity("ZyrexMES.Domain.Entities.Alert", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime?>("AcknowledgedAtUtc")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamptz");
+
+                    b.Property<string>("LineCode")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AcknowledgedAtUtc");
+
+                    b.HasIndex("Type", "LineCode", "CreatedAtUtc");
+
+                    b.ToTable("alerts", (string)null);
+                });
+
             modelBuilder.Entity("ZyrexMES.Domain.Entities.UnitTransaction", b =>
                 {
                     b.Property<int>("Id")

@@ -1,12 +1,15 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using ZyrexMES.Infrastructure.Persistence;
 
 namespace ZyrexMES.Api.Common;
 
 /// <summary>Records every non-GET request as an append-only audit trail entry.</summary>
-public class AuditMiddleware(RequestDelegate next)
+public class AuditMiddleware(RequestDelegate next, ILogger<AuditMiddleware> log)
 {
+    private readonly ILogger<AuditMiddleware> _log = log;
+
     public async Task InvokeAsync(HttpContext ctx, AppDbContext db)
     {
         if (HttpMethods.IsGet(ctx.Request.Method))
@@ -36,7 +39,7 @@ public class AuditMiddleware(RequestDelegate next)
                 });
                 await db.SaveChangesAsync();
             }
-            catch { /* audit must never break the request; ILogger wiring deferred to production hardening */ }
+            catch (Exception ex) { _log.LogWarning(ex, "Audit log write failed"); }
         }
     }
 
