@@ -2,7 +2,7 @@ import { type ChildProcess, execSync, spawn } from "node:child_process";
 import { closeSync, mkdirSync, openSync, readFileSync } from "node:fs";
 
 /**
- * Starts the E2E stack (Postgres relay, MES API on :8080, Next dev on :3000).
+ * Starts the E2E stack (Postgres relay, MES API on :9090, Next dev on :9002).
  * Services already listening are reused; only processes started here are
  * killed by global-teardown.ts. Service logs go to e2e/.logs/ (gitignored).
  */
@@ -47,37 +47,37 @@ export default async function globalSetup(): Promise<void> {
     console.warn("db-restart script failed (continuing if DB already up):", err);
   }
 
-  // 2. MES API on :8080.
+  // 2. MES API on :9090.
   try {
-    await waitFor("http://localhost:8080/health", 2_000);
-    console.log("API already running on :8080 — reusing.");
+    await waitFor("http://localhost:9090/health", 2_000);
+    console.log("API already running on :9090 — reusing.");
   } catch {
     // cwd is web/ → repo root is ".."; the project path must be root-relative.
     g.__e2eApi = start("dotnet run --project server/src/ZyrexMES.Api", "..", "e2e/.logs/api.log");
-    await waitFor("http://localhost:8080/health", 120_000);
+    await waitFor("http://localhost:9090/health", 120_000);
     if (readFileSync("e2e/.logs/api.log", "utf8").includes("does not exist")) {
       throw new Error("API failed to start: project path not found (see e2e/.logs/api.log)");
     }
-    console.log("API started on :8080.");
+    console.log("API started on :9090.");
   }
 
-  // 3. Next dev server on :3000.
+  // 3. Next dev server on :9002.
   try {
-    await waitFor("http://localhost:3000/login", 2_000);
-    console.log("Next dev already running on :3000 — reusing.");
+    await waitFor("http://localhost:9002/login", 2_000);
+    console.log("Next dev already running on :9002 — reusing.");
   } catch {
     g.__e2eWeb = start("npm run dev", ".", "e2e/.logs/web.log");
-    await waitFor("http://localhost:3000/login", 120_000);
-    console.log("Next dev started on :3000.");
+    await waitFor("http://localhost:9002/login", 120_000);
+    console.log("Next dev started on :9002.");
   }
 
   // 4. Warm the dev-server proxy paths: the very first rewritten request on a
   // cold next dev can hang, which would otherwise flake the login step.
   const warmDeadline = Date.now() + 60_000;
   for (const [url, init] of [
-    ["http://localhost:3000/health", { method: "GET" }],
+    ["http://localhost:9002/health", { method: "GET" }],
     [
-      "http://localhost:3000/api/auth/login",
+      "http://localhost:9002/api/auth/login",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -9,18 +9,18 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: `${process.env.API_ORIGIN ?? "http://localhost:8080"}/api/:path*`,
+        destination: `${process.env.API_ORIGIN ?? "http://localhost:9090"}/api/:path*`,
       },
       {
         // Kiosk heartbeat (useServerHeartbeat) pings same-origin /health.
         source: "/health",
-        destination: `${process.env.API_ORIGIN ?? "http://localhost:8080"}/health`,
+        destination: `${process.env.API_ORIGIN ?? "http://localhost:9090"}/health`,
       },
       {
         // SignalR hub (useLiveEvents) — LongPolling only; dev rewrites can't
         // carry websocket upgrades.
         source: "/hubs/:path*",
-        destination: `${process.env.API_ORIGIN ?? "http://localhost:8080"}/hubs/:path*`,
+        destination: `${process.env.API_ORIGIN ?? "http://localhost:9090"}/hubs/:path*`,
       },
     ];
   },

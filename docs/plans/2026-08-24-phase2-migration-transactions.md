@@ -65,7 +65,7 @@ if ($SN -and $Station) {
 - [ ] **Step 2: Jalankan probe dari jaringan pabrik**
 
 Run (butuh koneksi LAN pabrik): isi env lalu `probe-legacy.ps1 -SN <contoh-sn-valid> -Station <contoh-station>`.
-Expected: dua blok JSON tersimpan. **Jika laptop tidak reach `192.168.1.245:8090`**: minta pengguna menjalankan probe/MESTools di PC pabrik dan tempelkan hasilnya; simpan sebagai fixture pada Step 3 tanpa mengubah struktur langkah lain.
+Expected: dua blok JSON tersimpan. **Jika laptop tidak reach `192.168.1.245:9090`**: minta pengguna menjalankan probe/MESTools di PC pabrik dan tempelkan hasilnya; simpan sebagai fixture pada Step 3 tanpa mengubah struktur langkah lain.
 
 - [ ] **Step 3: Simpan fixture**
 

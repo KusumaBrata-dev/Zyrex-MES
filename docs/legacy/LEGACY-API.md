@@ -12,7 +12,7 @@
 
 ## Endpoint & Kredensial
 
-- Base URL: dari `mescfg.ini [MES] URL` (contoh terpantau: `http://192.168.1.245:8090/API/TE/PostData`)
+- Base URL: dari `mescfg.ini [MES] URL` (contoh terpantau: `http://192.168.1.245:9090/API/TE/PostData`)
 - UserID / Password: dari `[MES]` juga — **jangan pernah hardcode/log; simpan di env**
   (`MES_LEGACY__URL`, `MES_LEGACY__USERID`, `MES_LEGACY__PASSWORD`).
 - Password dikirim dalam bentuk sudah ter-hash (hex 32 char) oleh sumbernya.

@@ -1,8 +1,8 @@
 import type { Config } from "@playwright/test";
 
 /**
- * E2E config. globalSetup boots the stack (Postgres relay, API :8080, Next
- * dev :3000) — services already listening are reused; teardown kills only the
+ * E2E config. globalSetup boots the stack (Postgres relay, API :9090, Next
+ * dev :9002) — services already listening are reused; teardown kills only the
  * ones it started. Manual run docs live in web/README.md ("E2E").
  */
 const config: Config = {
@@ -14,7 +14,7 @@ const config: Config = {
   globalSetup: "./e2e/global-setup.ts",
   globalTeardown: "./e2e/global-teardown.ts",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:9002",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },

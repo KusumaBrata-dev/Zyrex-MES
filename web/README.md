@@ -3,7 +3,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 ## E2E (Playwright)
 
 The suite boots its own stack: `global-setup` restarts the WSL Postgres relay,
-starts the MES API (`:8080`) and Next dev (`:3000`) if they are not already
+starts the MES API (`:8080`) and Next dev (`:9002`) if they are not already
 running, seeds the `E99`/`ST-E2E`/`E2E-SKU`/`E2E-SN-0001` dataset via
 `wsl docker exec … psql`, and warms the dev proxy. Teardown kills only what it
 started. Artifacts (screenshots, traces, service logs) land in `e2e/artifacts`
@@ -30,7 +30,7 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:9002](http://localhost:9002) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
