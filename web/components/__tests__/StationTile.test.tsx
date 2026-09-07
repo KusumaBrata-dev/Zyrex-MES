@@ -28,7 +28,7 @@ describe("StationTile", () => {
     expect(screen.getByTestId("station-output-ST-A1")).toHaveTextContent("12");
     expect(screen.getByTestId("station-ng-ST-A1")).toHaveTextContent("3");
     expect(screen.getByTestId("station-status-ST-A1").className).toContain("bg-zyrex-success");
-    expect(screen.getByText("active")).toBeInTheDocument();
+    expect(screen.getByText(/Active/)).toBeInTheDocument();
     const link = screen.getByTestId("station-tile-ST-A1") as HTMLAnchorElement;
     expect(link.getAttribute("href")).toBe("/ng-report?stationId=11");
   });
@@ -45,6 +45,6 @@ describe("StationTile", () => {
         status="idle"
       />,
     );
-    expect(screen.getByTestId("station-status-ST-05").className).toContain("bg-zyrex-muted");
+    expect(screen.getByTestId("station-status-ST-05").className).toContain("bg-slate-200");
   });
 });

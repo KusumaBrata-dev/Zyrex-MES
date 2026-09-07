@@ -27,7 +27,7 @@ describe("ResultOverlay", () => {
     );
 
     const overlay = screen.getByTestId("result-overlay");
-    expect(overlay.className).toContain("bg-green-800"); // dark green backdrop
+    expect(overlay.className).toContain("bg-emerald-600"); // emerald green backdrop
     expect(screen.getByText("PASS")).toBeInTheDocument();
     expect(screen.getByText("SN-777")).toBeInTheDocument();
     expect(screen.getByText(/Next station: ST-20/)).toBeInTheDocument();

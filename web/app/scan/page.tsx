@@ -25,7 +25,7 @@ function readStationId(): number | null {
 export default function ScanPage() {
   // useSearchParams requires a Suspense boundary for static prerendering.
   return (
-    <Suspense fallback={<p className="p-6 text-neutral-500">Loading…</p>}>
+    <Suspense fallback={<p className="p-6 text-slate-400">Loading...</p>}>
       <ScanScreen />
     </Suspense>
   );
@@ -89,9 +89,9 @@ function ScanScreen() {
       <div className="flex flex-1 items-center justify-center p-6">
         <form
           onSubmit={saveStation}
-          className="w-full max-w-xs rounded-xl border border-black/10 bg-white p-6 shadow-lg dark:border-white/10 dark:bg-neutral-900"
+          className="w-full max-w-xs zyrex-card p-6 animate-fade-in"
         >
-          <h1 className="mb-4 text-center text-lg font-semibold">Set Station ID</h1>
+          <h1 className="mb-4 text-center text-lg font-bold text-slate-900">Set Station ID</h1>
           <input
             autoFocus
             inputMode="numeric"
@@ -99,40 +99,52 @@ function ScanScreen() {
             required
             value={stationInput}
             onChange={(e) => setStationInput(e.target.value)}
-            className="mb-4 w-full rounded border border-black/20 px-3 py-2 text-center text-2xl dark:border-white/20 dark:bg-neutral-800"
+            className="zyrex-input mb-4 text-center text-2xl font-bold"
             aria-label="Station ID"
           />
-          <button type="submit" className="w-full rounded bg-zred py-2 font-semibold text-white hover:bg-zbright">
+          <button type="submit" className="zyrex-btn-primary w-full">
             Save
           </button>
-          <p className="mt-3 text-center text-xs text-neutral-400">or open /scan?stationId=&lt;id&gt;</p>
+          <p className="mt-3 text-center text-xs text-slate-400">or open /scan?stationId=&lt;id&gt;</p>
         </form>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
-      <div className="flex items-center justify-end">
-        <Link href="/ng-report" className="text-sm text-zbright underline">
+    <div className="flex flex-1 flex-col gap-6 p-6 animate-fade-in" data-testid="scan-page">
+      {/* Header */}
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-black text-slate-900">Production Scan</h1>
+          <p className="text-xs text-slate-400 mt-0.5">Station #{stationId} · Real-time Monitoring</p>
+        </div>
+        <Link href="/ng-report" className="zyrex-btn-secondary">
           NG Report
         </Link>
-      </div>
+      </header>
+
+      {/* Daily Summary */}
       <DailySummary stationId={stationId} refreshSignal={summaryRefreshKey} />
 
-      <div className="flex flex-1 items-center">
-        <ScanInput onSubmit={onScan} disabled={phase.state === "submitting"} />
+      {/* Scan Input */}
+      <div className="flex flex-1 items-center justify-center">
+        <div className="w-full max-w-2xl">
+          <ScanInput onSubmit={onScan} disabled={phase.state === "submitting"} />
+        </div>
       </div>
 
+      {/* Toast */}
       {toast && (
         <div
           role="status"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-lg bg-black/80 px-4 py-2 text-sm text-white"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-lg bg-slate-900 px-4 py-2 text-sm text-white shadow-lg"
         >
           {toast}
         </div>
       )}
 
+      {/* Result Overlay */}
       {(phase.state === "pass" || phase.state === "rejected") && (
         <ResultOverlay
           kind={phase.state === "pass" ? "PASS" : "REJECTED"}

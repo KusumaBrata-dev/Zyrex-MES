@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 export interface StationTileProps {
   stationId: number;
@@ -26,7 +26,6 @@ export default function StationTile({
   const [displayNg, setDisplayNg] = useState(ngToday);
   const [popped, setPopped] = useState(false);
 
-  // Animate counter on value change
   useEffect(() => {
     if (outputToday !== displayOutput) {
       setPopped(true);
@@ -59,28 +58,28 @@ export default function StationTile({
     >
       {/* Status indicator line */}
       <div
-        className={`absolute top-0 left-0 right-0 h-[2px] ${
-          isActive ? "bg-zyrex-success" : "bg-zyrex-muted/30"
+        className={`absolute top-0 left-0 right-0 h-[3px] ${
+          isActive ? "bg-zyrex-success" : "bg-slate-200"
         }`}
         data-testid={`station-status-${stationCode}`}
       />
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-3">
+      <div className="flex items-start justify-between mb-3 mt-1">
         <div>
           <p
-            className="text-lg font-black tracking-tight text-foreground"
+            className="text-base font-black tracking-tight text-slate-900"
             style={{ fontFamily: "var(--font-jetbrains-mono)" }}
           >
             {stationCode}
           </p>
-          <p className="text-[11px] text-zyrex-muted truncate mt-0.5 max-w-[120px]">{name}</p>
+          <p className="text-[11px] text-slate-500 truncate mt-0.5 max-w-[120px]">{name}</p>
         </div>
         <span
-          className={`text-[10px] uppercase tracking-widest font-semibold px-2 py-0.5 rounded-full ${
+          className={`text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full ${
             isActive
-              ? "bg-zyrex-success/20 text-zyrex-success"
-              : "bg-zyrex-muted/20 text-zyrex-muted"
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-slate-100 text-slate-400"
           }`}
         >
           {isActive ? "● Active" : "○ Idle"}
@@ -93,9 +92,7 @@ export default function StationTile({
         <div className="flex flex-col">
           <span className="zyrex-label">Output</span>
           <p
-            className={`text-2xl font-bold mt-0.5 ${
-              popped ? "animate-counter-pop text-white" : "text-white"
-            }`}
+            className={`text-xl font-bold mt-0.5 ${popped ? "animate-counter-pop text-slate-900" : "text-slate-900"}`}
             style={{ fontFamily: "var(--font-jetbrains-mono)" }}
             data-testid={`station-output-${stationCode}`}
           >
@@ -107,8 +104,8 @@ export default function StationTile({
         <div className="flex flex-col">
           <span className="zyrex-label">NG</span>
           <p
-            className={`text-2xl font-bold mt-0.5 ${
-              ngToday > 0 ? "text-zbright" : "text-zyrex-muted"
+            className={`text-xl font-bold mt-0.5 ${
+              ngToday > 0 ? "text-zbright" : "text-slate-400"
             } ${popped ? "animate-counter-pop" : ""}`}
             style={{ fontFamily: "var(--font-jetbrains-mono)" }}
             data-testid={`station-ng-${stationCode}`}
@@ -121,14 +118,14 @@ export default function StationTile({
         <div className="flex flex-col">
           <span className="zyrex-label">Yield</span>
           <p
-            className={`text-2xl font-bold mt-0.5 ${
+            className={`text-xl font-bold mt-0.5 ${
               yieldPercent !== null && yieldPercent >= 95
-                ? "text-zyrex-success"
+                ? "text-emerald-600"
                 : yieldPercent !== null && yieldPercent >= 85
-                ? "text-zyrex-warning"
+                ? "text-amber-500"
                 : yieldPercent !== null
                 ? "text-zbright"
-                : "text-zyrex-muted"
+                : "text-slate-300"
             }`}
             style={{ fontFamily: "var(--font-jetbrains-mono)" }}
           >
@@ -138,7 +135,7 @@ export default function StationTile({
       </div>
 
       {/* Footer */}
-      <div className="mt-3 pt-3 border-t border-zyrex-border flex items-center justify-between text-[10px] text-zyrex-muted">
+      <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
         <span>
           {lastEventAtUtc
             ? new Date(lastEventAtUtc).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })

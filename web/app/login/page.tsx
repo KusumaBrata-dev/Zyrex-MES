@@ -26,11 +26,11 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-1 items-center justify-center p-4">
+    <div className="flex flex-1 items-center justify-center p-4 relative overflow-hidden">
       {/* Background accent */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-zred/10 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-zbright/5 blur-3xl" />
+        <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-red-50 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-red-100 blur-3xl" />
       </div>
 
       <form
@@ -39,11 +39,11 @@ export default function LoginPage() {
       >
         {/* Logo */}
         <div className="mb-8 text-center">
-          <img src="/brand/logo-white.svg" alt="Zyrex" className="mx-auto mb-4 h-16 w-auto opacity-90" />
-          <h1 className="text-2xl font-black tracking-tight text-white">
+          <img src="/brand/logo-white.svg" alt="Zyrex" className="mx-auto mb-4 h-16 w-auto" />
+          <h1 className="text-2xl font-black tracking-tight text-slate-900">
             Zyrex<span className="text-zbright">MES</span>
           </h1>
-          <p className="mt-2 text-xs uppercase tracking-widest text-zyrex-muted">
+          <p className="mt-2 text-xs uppercase tracking-widest text-slate-400">
             Production Control System
           </p>
         </div>
@@ -52,7 +52,7 @@ export default function LoginPage() {
         <div className="zyrex-card p-6">
           {/* Username */}
           <div className="mb-4">
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-zyrex-muted" htmlFor="username">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500" htmlFor="username">
               Username
             </label>
             <input
@@ -62,14 +62,14 @@ export default function LoginPage() {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-lg border border-zyrex-border bg-zyrex-surface px-4 py-2.5 text-white placeholder-zyrex-muted/50 focus:border-zred focus:outline-none focus:ring-1 focus:ring-zred/50 transition-all"
+              className="zyrex-input"
               disabled={busy}
             />
           </div>
 
           {/* Password */}
           <div className="mb-5">
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-zyrex-muted" htmlFor="password">
+            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500" htmlFor="password">
               Password
             </label>
             <input
@@ -79,14 +79,14 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-zyrex-border bg-zyrex-surface px-4 py-2.5 text-white placeholder-zyrex-muted/50 focus:border-zred focus:outline-none focus:ring-1 focus:ring-zred/50 transition-all"
+              className="zyrex-input"
               disabled={busy}
             />
           </div>
 
           {/* Error */}
           {error && (
-            <div role="alert" className="mb-4 rounded-lg border border-zbright/30 bg-zbright/10 px-4 py-3 text-sm text-zbright">
+            <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               ⚠ {error}
             </div>
           )}
@@ -95,7 +95,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-lg bg-zred py-3 font-bold text-white hover:bg-zbright disabled:opacity-50 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-zred/50 focus:ring-offset-2 focus:ring-offset-zyrex-black"
+            className="zyrex-btn-primary w-full"
           >
             {busy ? (
               <span className="flex items-center justify-center gap-2">
@@ -109,7 +109,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer hint */}
-        <p className="mt-6 text-center text-[11px] text-zyrex-muted">
+        <p className="mt-6 text-center text-[11px] text-slate-400">
           PT Zyrexindo Mandiri Buana Tbk · MES v1.0
         </p>
       </form>

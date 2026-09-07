@@ -3,27 +3,24 @@
 import { useState } from "react";
 import type { AlertDto } from "@/lib/api";
 
-const SEVERITY_CONFIG: Record<string, { bg: string; border: string; text: string; dot: string; pulse: string }> = {
+const SEVERITY_CONFIG: Record<string, { bg: string; border: string; text: string; dot: string }> = {
   critical: {
-    bg: "bg-zbright/10",
-    border: "border-zbright/40",
-    text: "text-zbright",
-    dot: "bg-zbright",
-    pulse: "animate-pulse-ring",
+    bg: "bg-red-50",
+    border: "border-red-200",
+    text: "text-red-700",
+    dot: "bg-red-500",
   },
   warning: {
-    bg: "bg-zyrex-warning/10",
-    border: "border-zyrex-warning/40",
-    text: "text-zyrex-warning",
-    dot: "bg-zyrex-warning",
-    pulse: "",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
+    text: "text-amber-700",
+    dot: "bg-amber-500",
   },
   info: {
-    bg: "bg-sky-500/10",
-    border: "border-sky-500/40",
-    text: "text-sky-400",
-    dot: "bg-sky-400",
-    pulse: "",
+    bg: "bg-blue-50",
+    border: "border-blue-200",
+    text: "text-blue-700",
+    dot: "bg-blue-500",
   },
 };
 
@@ -42,14 +39,14 @@ export default function AlertsPanel({ alerts, onAck }: { alerts: AlertDto[]; onA
         onClick={() => setOpen((v) => !v)}
         className={`mb-3 flex w-full items-center justify-between rounded-lg border px-4 py-3 text-sm font-semibold transition-all ${
           open
-            ? "border-zyrex-border bg-zyrex-surface"
-            : "border-zyrex-border/60 bg-zyrex-surface/60 hover:border-zyrex-border"
+            ? "border-slate-200 bg-white shadow-sm"
+            : "border-slate-200 bg-slate-50 hover:border-slate-300"
         }`}
         data-testid="alerts-toggle"
         aria-expanded={open}
       >
         <span className="flex items-center gap-2">
-          <span className={`h-2 w-2 rounded-full ${alerts.length > 0 ? "bg-zbright animate-pulse-ring" : "bg-zyrex-muted"}`} />
+          <span className={`h-2 w-2 rounded-full ${alerts.length > 0 ? "bg-zbright animate-pulse-ring" : "bg-slate-300"}`} />
           Alerts
           {alerts.length > 0 && (
             <span className="inline-flex items-center justify-center rounded-full bg-zbright px-2 py-0.5 text-[10px] font-bold text-white min-w-[1.25rem]">
@@ -57,14 +54,14 @@ export default function AlertsPanel({ alerts, onAck }: { alerts: AlertDto[]; onA
             </span>
           )}
         </span>
-        <span aria-hidden className="text-zyrex-muted">{open ? "▾" : "▸"}</span>
+        <span aria-hidden className="text-slate-400">{open ? "▾" : "▸"}</span>
       </button>
 
       {open &&
         (alerts.length === 0 ? (
-          <div className="rounded-lg border border-zyrex-border bg-zyrex-surface/50 p-6 text-center" data-testid="alerts-empty">
-            <p className="text-zyrex-muted text-sm">✓ No active alerts</p>
-            <p className="text-zyrex-muted/60 text-xs mt-1">All stations running within thresholds</p>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center" data-testid="alerts-empty">
+            <p className="text-emerald-600 text-sm">✓ No active alerts</p>
+            <p className="text-slate-400 text-xs mt-1">All stations running within thresholds</p>
           </div>
         ) : (
           <ul className="flex flex-col gap-2" role="list">
@@ -85,9 +82,9 @@ export default function AlertsPanel({ alerts, onAck }: { alerts: AlertDto[]; onA
                       <span className="text-[10px] opacity-70 font-mono">{a.lineCode}</span>
                     )}
                   </div>
-                  <p className="text-foreground/90 leading-snug">{a.message}</p>
+                  <p className="text-slate-700 leading-snug">{a.message}</p>
                   <div className="mt-2 flex items-center justify-between">
-                    <span className="text-[10px] opacity-50 font-mono">
+                    <span className="text-[10px] opacity-60 font-mono text-slate-500">
                       {new Date(a.createdAtUtc).toLocaleString("en-GB", {
                         day: "2-digit",
                         month: "short",
@@ -98,7 +95,7 @@ export default function AlertsPanel({ alerts, onAck }: { alerts: AlertDto[]; onA
                     <button
                       type="button"
                       onClick={() => onAck(a.id)}
-                      className="rounded-md bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/80 hover:bg-white/20 transition-colors"
+                      className="rounded-md bg-white border border-slate-200 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
                       data-testid={`alert-ack-${a.id}`}
                     >
                       Ack

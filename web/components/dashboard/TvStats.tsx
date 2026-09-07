@@ -123,11 +123,11 @@ export default function TvStats({ lineCode }: TvStatsProps) {
 
   return (
     <div
-      className={`relative flex flex-col h-screen bg-black text-white overflow-hidden ${cursorHidden ? "cursor-none" : ""}`}
+      className={`relative flex flex-col h-screen bg-slate-900 text-white overflow-hidden ${cursorHidden ? "cursor-none" : ""}`}
       data-testid="tv-page"
     >
       {/* Scan-line effect */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-10">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-5">
         <div className="absolute inset-x-0 h-px bg-white animate-[zyrex-scanline_4s_linear_infinite]" />
       </div>
 
@@ -141,13 +141,13 @@ export default function TvStats({ lineCode }: TvStatsProps) {
             Updated {lastRefresh.toLocaleTimeString("en-GB")} · {stations.length} stations
           </p>
         </div>
-          <button
-            onClick={() => window.history.back()}
-            className="px-5 py-2.5 rounded-lg border border-white/20 text-sm font-semibold hover:bg-white/10 transition-colors"
-            data-testid="tv-exit"
-          >
-            Exit TV
-          </button>
+        <button
+          onClick={() => window.history.back()}
+          className="px-5 py-2.5 rounded-lg border border-white/20 text-sm font-semibold hover:bg-white/10 transition-colors"
+          data-testid="tv-exit"
+        >
+          Exit TV
+        </button>
       </header>
 
       {/* ── Main KPIs ── */}
@@ -155,29 +155,29 @@ export default function TvStats({ lineCode }: TvStatsProps) {
         <div className="grid grid-cols-3 gap-6">
           {/* OUTPUT */}
           <div className="zyrex-card flex flex-col items-center justify-center py-10" data-testid="tv-output">
-            <span className="zyrex-label mb-2">OUTPUT</span>
-            <p className="text-8xl font-black text-zyrex-success" style={{ fontFamily: "var(--font-jetbrains-mono)", letterSpacing: "-0.03em" }}>
+            <span className="zyrex-label mb-2 text-slate-400">OUTPUT</span>
+            <p className="text-8xl font-black text-emerald-400" style={{ fontFamily: "var(--font-jetbrains-mono)", letterSpacing: "-0.03em" }}>
               {totalOutput}
             </p>
-            <span className="text-sm text-white/40 mt-2 font-mono">pcs</span>
+            <span className="text-sm text-slate-500 mt-2 font-mono">pcs</span>
           </div>
 
           {/* NG */}
           <div className="zyrex-card flex flex-col items-center justify-center py-10" data-testid="tv-ng">
-            <span className="zyrex-label mb-2">NG</span>
-            <p className={`text-8xl font-black ${totalNg > 0 ? "text-zbright" : "text-white/30"}`}
+            <span className="zyrex-label mb-2 text-slate-400">NG</span>
+            <p className={`text-8xl font-black ${totalNg > 0 ? "text-red-400" : "text-slate-600"}`}
               style={{ fontFamily: "var(--font-jetbrains-mono)", letterSpacing: "-0.03em" }}
             >
               {totalNg}
             </p>
-            <span className="text-sm text-white/40 mt-2 font-mono">pcs</span>
+            <span className="text-sm text-slate-500 mt-2 font-mono">pcs</span>
           </div>
 
           {/* YIELD with ring */}
           <div className="zyrex-card flex flex-col items-center justify-center py-10" data-testid="tv-yield">
-            <span className="zyrex-label mb-2">YIELD</span>
+            <span className="zyrex-label mb-2 text-slate-400">YIELD</span>
             {totalYield === null ? (
-              <p className="text-6xl font-black text-white/30" style={{ fontFamily: "var(--font-jetbrains-mono)" }}>—</p>
+              <p className="text-6xl font-black text-slate-600" style={{ fontFamily: "var(--font-jetbrains-mono)" }}>—</p>
             ) : (
               <>
                 <div className="relative w-48 h-48">
@@ -223,9 +223,9 @@ export default function TvStats({ lineCode }: TvStatsProps) {
                   className="flex items-center gap-4 px-4 py-3 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 transition-colors"
                   data-testid="tv-event-item"
                 >
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ev.NgCode ? "bg-zbright animate-pulse-ring" : "bg-zyrex-success"}`} />
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ev.NgCode ? "bg-red-400 animate-pulse-ring" : "bg-emerald-400"}`} />
                   <span className="font-bold text-white min-w-[100px]">{ev.StationCode}</span>
-                  <span className={`uppercase font-semibold tracking-wider ${ev.NgCode ? "text-zbright" : "text-zyrex-success"}`}>
+                  <span className={`uppercase font-semibold tracking-wider ${ev.NgCode ? "text-red-400" : "text-emerald-400"}`}>
                     {ev.NgCode ?? "OK"}
                   </span>
                   <span className="text-white/40 flex-1 truncate">{ev.Sn}</span>

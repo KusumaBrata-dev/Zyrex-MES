@@ -13,7 +13,7 @@ const DOUBLE_SUBMIT_GUARD_MS = 500;
 export default function ScanInput({
   onSubmit,
   disabled = false,
-  placeholder = "Scan serial number…",
+  placeholder = "Scan serial number...",
 }: {
   onSubmit: (serialNumber: string) => void;
   disabled?: boolean;
@@ -49,7 +49,7 @@ export default function ScanInput({
       disabled={disabled}
       placeholder={placeholder}
       aria-label="Serial number"
-      className="w-full rounded-xl border-4 border-black/20 bg-white px-6 py-6 text-center text-4xl font-bold tracking-widest outline-none focus:border-zred dark:border-white/20 dark:bg-neutral-900"
+      className="zyrex-input text-center text-4xl font-bold tracking-widest py-8"
       onBlur={(e) => e.currentTarget.focus()}
       onKeyDown={handleKeyDown}
     />

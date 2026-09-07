@@ -84,7 +84,7 @@ export default function GridBoard({ filterLine }: { filterLine: string }) {
 
   if (error) {
     return (
-      <div role="alert" className="rounded border border-zbright/30 bg-zbright/10 px-4 py-3 text-sm text-zbright">
+      <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
         ⚠ {error}
       </div>
     );
@@ -93,7 +93,7 @@ export default function GridBoard({ filterLine }: { filterLine: string }) {
     return (
       <div className="flex items-center gap-3 py-8">
         <span className="h-2 w-2 rounded-full bg-zred animate-pulse-ring" />
-        <span className="text-sm text-zyrex-muted">Loading grid...</span>
+        <span className="text-sm text-slate-400">Loading grid...</span>
       </div>
     );
   }
@@ -106,7 +106,7 @@ export default function GridBoard({ filterLine }: { filterLine: string }) {
         <section key={line.lineCode} data-testid={`line-section-${line.lineCode}`} className="animate-fade-in" style={{ animationDelay: `${idx * 50}ms` }}>
           <div className="zyrex-section-title flex items-center gap-3">
             <span>{line.lineCode}</span>
-            <span className="text-[10px] font-normal text-zyrex-muted uppercase tracking-wider">
+            <span className="text-[10px] font-normal text-slate-400 uppercase tracking-wider">
               {line.stations.length} station{line.stations.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -128,7 +128,7 @@ export default function GridBoard({ filterLine }: { filterLine: string }) {
         </section>
       ))}
       {lines.length === 0 && (
-        <p className="py-8 text-center text-sm text-zyrex-muted">No stations for this line.</p>
+        <p className="py-8 text-center text-sm text-slate-400">No stations for this line.</p>
       )}
     </div>
   );

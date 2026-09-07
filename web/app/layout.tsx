@@ -29,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col bg-zyrex-black text-foreground antialiased">
+      <body className="flex min-h-full flex-col bg-[#F8FAFC] text-foreground antialiased">
         <OfflineGate />
         <LogoHeader />
         <main className="flex flex-1 flex-col">{children}</main>

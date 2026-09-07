@@ -47,14 +47,14 @@ export default function ResultOverlay({ kind, sn, reason, nextStationCode, onDon
     <div
       data-testid="result-overlay"
       onClick={handleTap}
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 text-white ${
-        kind === "PASS" ? "bg-green-800" : "bg-zred"
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 text-white animate-fade-in ${
+        kind === "PASS" ? "bg-emerald-600" : "bg-zred"
       }`}
     >
       <p className="text-8xl font-black tracking-widest">{kind}</p>
       {sn && <p className="text-6xl font-bold break-all px-8 text-center">{sn}</p>}
       {kind === "PASS" && nextStationCode && (
-        <p className="text-3xl">Next station: {nextStationCode}</p>
+        <p className="text-3xl font-semibold">Next station: {nextStationCode}</p>
       )}
       {kind === "REJECTED" && (
         <>

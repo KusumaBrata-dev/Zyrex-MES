@@ -1,37 +1,40 @@
 @import "tailwindcss";
 
-/* ── Zyrex Industrial Theme ─────────────────────────────────────────── */
+/* ── Zyrex Light Industrial Theme ─────────────────────────────────── */
 :root {
   /* background layers */
-  --zyrex-black:   #0A0E14;
-  --zyrex-surface: #131B24;
-  --zyrex-border:  #1F2937;
+  --zyrex-bg:         #F8FAFC;
+  --zyrex-surface:    #FFFFFF;
+  --zyrex-border:     #E2E8F0;
+  --zyrex-border-strong: #CBD5E1;
   /* text */
-  --zyrex-text:    #F9FAFB;
-  --zyrex-muted:   #6B7280;
+  --zyrex-text:       #0F172A;
+  --zyrex-muted:      #64748B;
+  --zyrex-subtle:     #94A3B8;
   /* brand */
-  --zred:          #C71C2E;
-  --zbright:       #FA1A3F;
+  --zred:             #C71C2E;
+  --zbright:          #FA1A3F;
   /* semantic */
-  --zyrex-success: #10B981;
-  --zyrex-warning: #F59E0B;
+  --zyrex-success:    #10B981;
+  --zyrex-warning:    #F59E0B;
+  --zyrex-info:       #3B82F6;
 }
 
 @theme inline {
-  --color-background: var(--zyrex-black);
+  --color-background: var(--zyrex-bg);
   --color-foreground: var(--zyrex-text);
   --color-zyrex-surface: var(--zyrex-surface);
   --color-zyrex-border: var(--zyrex-border);
+  --color-zyrex-border-strong: var(--zyrex-border-strong);
   --color-zyrex-muted: var(--zyrex-muted);
   --color-zred: var(--zred);
   --color-zbright: var(--zbright);
   --color-zyrex-success: var(--zyrex-success);
   --color-zyrex-warning: var(--zyrex-warning);
+  --color-zyrex-info: var(--zyrex-info);
   --font-sans: var(--font-inter), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
-
-/* Inter + JetBrains Mono via next/font in layout.tsx */
 
 /* ── Animations ────────────────────────────────────────────────────── */
 @keyframes zyrex-fade-in {
@@ -39,7 +42,7 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 @keyframes zyrex-pulse-ring {
-  0%   { box-shadow: 0 0 0 0 rgba(199, 28, 46, 0.5); }
+  0%   { box-shadow: 0 0 0 0 rgba(199, 28, 46, 0.4); }
   70%  { box-shadow: 0 0 0 8px rgba(199, 28, 46, 0); }
   100% { box-shadow: 0 0 0 0 rgba(199, 28, 46, 0); }
 }
@@ -58,7 +61,7 @@
 
 /* ── Base ──────────────────────────────────────────────────────────── */
 html {
-  background: var(--zyrex-black);
+  background: var(--zyrex-bg);
   color: var(--zyrex-text);
   font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -66,34 +69,32 @@ html {
 }
 body { min-height: 100dvh; }
 
-/* Selection */
-::selection { background: rgba(199, 28, 46, 0.35); }
+::selection { background: rgba(199, 28, 46, 0.15); }
 
-/* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--zyrex-black); }
-::-webkit-scrollbar-thumb { background: var(--zyrex-border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--zyrex-muted); }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--zyrex-border-strong); border-radius: 3px; }
 
 /* ── Utility: card surface ─────────────────────────────────────────── */
 .zyrex-card {
   background: var(--zyrex-surface);
   border: 1px solid var(--zyrex-border);
-  border-radius: 12px;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .zyrex-card-hover {
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 .zyrex-card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   border-color: rgba(199, 28, 46, 0.3);
 }
 
 /* ── Typography helpers ────────────────────────────────────────────── */
 .zyrex-label {
   font-size: 0.6875rem;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--zyrex-muted);
   font-weight: 600;
@@ -109,13 +110,59 @@ body { min-height: 100dvh; }
 .zyrex-section-title {
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--zyrex-muted);
   padding: 0.5rem 0;
-  border-bottom: 1px solid var(--zyrex-border);
+  border-bottom: 2px solid var(--zyrex-border);
   margin-bottom: 1rem;
 }
+
+/* ── Form elements ─────────────────────────────────────────────────── */
+.zyrex-input {
+  background: var(--zyrex-surface);
+  border: 1px solid var(--zyrex-border-strong);
+  border-radius: 8px;
+  padding: 0.625rem 0.875rem;
+  color: var(--zyrex-text);
+  font-size: 0.9375rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+}
+.zyrex-input:focus {
+  outline: none;
+  border-color: var(--zred);
+  box-shadow: 0 0 0 3px rgba(199, 28, 46, 0.12);
+}
+.zyrex-input::placeholder { color: var(--zyrex-subtle); }
+
+.zyrex-btn-primary {
+  background: var(--zred);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.625rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.zyrex-btn-primary:hover { background: var(--zbright); }
+.zyrex-btn-primary:active { transform: scale(0.98); }
+.zyrex-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.zyrex-btn-secondary {
+  background: var(--zyrex-surface);
+  color: var(--zyrex-text);
+  border: 1px solid var(--zyrex-border-strong);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.zyrex-btn-secondary:hover { border-color: var(--zred); background: rgba(199, 28, 46, 0.04); }
 
 /* ── Print ─────────────────────────────────────────────────────────── */
 @media print {
