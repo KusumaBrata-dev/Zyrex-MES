@@ -88,7 +88,7 @@ describe("GridBoard", () => {
     rerender(<GridBoard filterLine="All" />);
 
     await waitFor(() => expect(screen.getByTestId("station-output-ST-A")).toHaveTextContent("13"));
-    expect(screen.getByTestId("station-status-ST-A").className).toContain("bg-emerald-500");
+    expect(screen.getByTestId("station-status-ST-A").className).toContain("bg-zyrex-success");
   });
 
   it("filters by line selector", async () => {
