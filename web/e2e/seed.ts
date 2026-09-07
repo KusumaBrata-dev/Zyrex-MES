@@ -28,8 +28,8 @@ function sqlStr(value: string): string {
 
 export function seedE2eData(): void {
   psql(`
-    DELETE FROM "UnitTransactions" t USING "Units" u
-      WHERE t."UnitId" = u."Id" AND u."SerialNumber" = 'E2E-SN-0001';
+    -- Cascade-delete transactions first to avoid FK violations
+    DELETE FROM "UnitTransactions" WHERE "UnitId" IN (SELECT "Id" FROM "Units" WHERE "SerialNumber" LIKE 'E2E-%');
     DELETE FROM "RoutingSteps" s USING "Routings" r, "Products" p
       WHERE s."RoutingId" = r."Id" AND r."ProductId" = p."Id" AND p."Sku" = 'E2E-SKU';
     DELETE FROM "Routings" r USING "Products" p

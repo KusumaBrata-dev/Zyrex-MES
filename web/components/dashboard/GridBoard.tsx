@@ -58,8 +58,9 @@ export default function GridBoard({ filterLine }: { filterLine: string }) {
     const { type, stationCode, atUtc } = liveEvent;
     setGrid((prev) => {
       if (!prev) return prev;
-      // avoid double-increment if already at this atUtc (effect re-runs)
-      const alreadyApplied = prev.lines.some((l) => l.stations.some((s) => s.stationCode === stationCode && s.lastEventAtUtc === atUtc));
+      const alreadyApplied = prev.lines.some((l) =>
+        l.stations.some((s) => s.stationCode === stationCode && s.lastEventAtUtc === atUtc),
+      );
       if (alreadyApplied) return prev;
       return {
         lines: prev.lines.map((line) => ({
@@ -83,39 +84,52 @@ export default function GridBoard({ filterLine }: { filterLine: string }) {
 
   if (error) {
     return (
-      <p role="alert" className="text-sm text-zbright">
-        {error}
-      </p>
+      <div role="alert" className="rounded border border-zbright/30 bg-zbright/10 px-4 py-3 text-sm text-zbright">
+        ⚠ {error}
+      </div>
     );
   }
   if (!grid) {
-    return <p className="text-sm text-neutral-400">Loading grid…</p>;
+    return (
+      <div className="flex items-center gap-3 py-8">
+        <span className="h-2 w-2 rounded-full bg-zred animate-pulse-ring" />
+        <span className="text-sm text-zyrex-muted">Loading grid...</span>
+      </div>
+    );
   }
 
   const lines = filterLine === "All" || !filterLine ? grid.lines : grid.lines.filter((l) => l.lineCode === filterLine);
 
   return (
     <div className="flex flex-col gap-8" data-testid="grid-board">
-      {lines.map((line) => (
-        <section key={line.lineCode} data-testid={`line-section-${line.lineCode}`}>
-          <h2 className="mb-3 text-sm font-bold tracking-widest text-neutral-500">{line.lineCode}</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {line.stations.map((s) => (
-              <StationTile
-                key={s.stationId}
-                stationId={s.stationId}
-                stationCode={s.stationCode}
-                name={s.name}
-                outputToday={s.outputToday}
-                ngToday={s.ngToday}
-                lastEventAtUtc={s.lastEventAtUtc}
-                status={s.status as "active" | "idle"}
-              />
+      {lines.map((line, idx) => (
+        <section key={line.lineCode} data-testid={`line-section-${line.lineCode}`} className="animate-fade-in" style={{ animationDelay: `${idx * 50}ms` }}>
+          <div className="zyrex-section-title flex items-center gap-3">
+            <span>{line.lineCode}</span>
+            <span className="text-[10px] font-normal text-zyrex-muted uppercase tracking-wider">
+              {line.stations.length} station{line.stations.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+            {line.stations.map((s, i) => (
+              <div key={s.stationId} style={{ animationDelay: `${i * 30}ms` }} className="animate-fade-in">
+                <StationTile
+                  stationId={s.stationId}
+                  stationCode={s.stationCode}
+                  name={s.name}
+                  outputToday={s.outputToday}
+                  ngToday={s.ngToday}
+                  lastEventAtUtc={s.lastEventAtUtc}
+                  status={s.status as "active" | "idle"}
+                />
+              </div>
             ))}
           </div>
         </section>
       ))}
-      {lines.length === 0 && <p className="text-sm text-neutral-400">No stations for this line.</p>}
+      {lines.length === 0 && (
+        <p className="py-8 text-center text-sm text-zyrex-muted">No stations for this line.</p>
+      )}
     </div>
   );
 }

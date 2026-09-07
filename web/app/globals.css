@@ -1,40 +1,124 @@
 @import "tailwindcss";
 
+/* ── Zyrex Industrial Theme ─────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* background layers */
+  --zyrex-black:   #0A0E14;
+  --zyrex-surface: #131B24;
+  --zyrex-border:  #1F2937;
+  /* text */
+  --zyrex-text:    #F9FAFB;
+  --zyrex-muted:   #6B7280;
+  /* brand */
+  --zred:          #C71C2E;
+  --zbright:       #FA1A3F;
+  /* semantic */
+  --zyrex-success: #10B981;
+  --zyrex-warning: #F59E0B;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--zyrex-black);
+  --color-foreground: var(--zyrex-text);
+  --color-zyrex-surface: var(--zyrex-surface);
+  --color-zyrex-border: var(--zyrex-border);
+  --color-zyrex-muted: var(--zyrex-muted);
+  --color-zred: var(--zred);
+  --color-zbright: var(--zbright);
+  --color-zyrex-success: var(--zyrex-success);
+  --color-zyrex-warning: var(--zyrex-warning);
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
-/* Zyrex brand palette → utilities like bg-zred, text-zbright, ring-zred ... */
-@theme {
-  --color-zred: #c71c2e;
-  --color-zbright: #fa1a3f;
+/* Inter + JetBrains Mono via next/font in layout.tsx */
+
+/* ── Animations ────────────────────────────────────────────────────── */
+@keyframes zyrex-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes zyrex-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(199, 28, 46, 0.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(199, 28, 46, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(199, 28, 46, 0); }
+}
+@keyframes zyrex-scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+@keyframes zyrex-counter {
+  from { opacity: 0.4; transform: scale(0.97); }
+  to   { opacity: 1;    transform: scale(1); }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.animate-fade-in      { animation: zyrex-fade-in 0.3s ease both; }
+.animate-pulse-ring   { animation: zyrex-pulse-ring 1.5s infinite; }
+.animate-counter-pop  { animation: zyrex-counter 0.2s ease; }
+
+/* ── Base ──────────────────────────────────────────────────────────── */
+html {
+  background: var(--zyrex-black);
+  color: var(--zyrex-text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body { min-height: 100dvh; }
+
+/* Selection */
+::selection { background: rgba(199, 28, 46, 0.35); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--zyrex-black); }
+::-webkit-scrollbar-thumb { background: var(--zyrex-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--zyrex-muted); }
+
+/* ── Utility: card surface ─────────────────────────────────────────── */
+.zyrex-card {
+  background: var(--zyrex-surface);
+  border: 1px solid var(--zyrex-border);
+  border-radius: 12px;
+}
+.zyrex-card-hover {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.zyrex-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-color: rgba(199, 28, 46, 0.3);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── Typography helpers ────────────────────────────────────────────── */
+.zyrex-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--zyrex-muted);
+  font-weight: 600;
+}
+.zyrex-kpi {
+  font-family: var(--font-jetbrains-mono), monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--zyrex-text);
+  letter-spacing: -0.02em;
+}
+.zyrex-section-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--zyrex-muted);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--zyrex-border);
+  margin-bottom: 1rem;
 }
 
-/* Print-to-PDF: hide chrome, keep only report content */
+/* ── Print ─────────────────────────────────────────────────────────── */
 @media print {
-  header,
-  .no-print {
-    display: none !important;
-  }
+  header, .no-print { display: none !important; }
+  body { background: white; color: black; }
 }
